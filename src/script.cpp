@@ -2,24 +2,23 @@
 #include "keyboard.h"
 #include "log.h"
 #include "config.h"
+#include "ui.h"
 
 #include <format>
-
-namespace
-{
-	bool g_enabled = false;
-	ModConfig g_config;
-
-	void OnTick()
-	{
-		//Mod shit here
-	}
-}
+#include <vector>
+#include <string>
 
 void ScriptMain()
 {
 
-	g_config = LoadConfig();
+	ModConfig g_config = LoadConfig();
+	std::vector<std::string> debugMessages;
+	bool g_showOverlay = true;
+	
+	if (g_config.DisableMod)
+		return;
+	else
+		UI::DisplaySubtitle("Polka Survival Activated");
 
 	if (g_config.enableTextLogging) {
 		Log::Init();
@@ -28,7 +27,14 @@ void ScriptMain()
 
 	while (true)
 	{
-		OnTick();
+		
+		if (IsKeyJustUp(VK_F19))
+			g_showOverlay = !g_showOverlay;
+
+		if (g_showOverlay) {
+			UI::DrawAllDebug(debugMessages);
+		}
+
 		WAIT(0);
 	}
 }

@@ -9,6 +9,15 @@ void UI::DisplaySubtitle(const char* text)
 	UILOG::_UILOG_CLEAR_CACHED_OBJECTIVE();
 }
 
+void UI::DrawAllDebug(const std::vector<std::string>& debugMessages)
+{
+	int row = 0;
+	for (const std::string& message : debugMessages){
+		UI::DrawDebugText(message.c_str(), 60.0f, 300.0f + row * 21.0f, 0.28f);
+		row++;
+	}
+}
+
 void UI::DrawDebugText(const char* text, float pixelX, float pixelY, float scale)
 {
 	UIDEBUG::_BG_SET_TEXT_SCALE(scale, scale);
