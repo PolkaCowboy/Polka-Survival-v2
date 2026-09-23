@@ -31,15 +31,19 @@ ModConfig LoadConfig()
 			";Turn off the mod");
 
 		ini.SetValue("DEAD_EYE", "DURATION_COST", std::format("{:g}", cfg.DeadEyeDurationCost).c_str(), ";Game default duration cost is roughly 4.27.");
-		ini.SetValue("DEAD_EYE", "ACTIVATION_COST", std::format("{:g}", cfg.DeadEyeActivationCoste).c_str());
+		ini.SetValue("DEAD_EYE", "ACTIVATION_COST", std::format("{:g}", cfg.DeadEyeActivationCost).c_str());
 
 		ini.SetLongValue("HEALTH", "HEALING_THRESHOLD", cfg.HealingThreshold,
 			";Percent that the health core needs to be above before the health ring heals.\n"
 			";Mod default = 50");
 		ini.SetValue("HEALTH", "CORE_DRAINS_PER_DAY", std::format("{:g}", cfg.HealthCoreDrainsPerDay).c_str(),
-			";How many times the health & stamina core should fully drain per in-game day.\n"
+			";How many times the health core should fully drain per in-game day (48 real world minutes). 0 = off.\n"
 			";Mod default = 2");
-		ini.SetBoolValue("HEALTH", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth, ";Drain health core if stamina core goes red");
+
+		ini.SetValue("STAMINA", "CORE_DRAINS_PER_DAY", std::format("{:g}", cfg.StaminaCoreDrainsPerDay).c_str(),
+			";How many times the stamina core should fully drain per in-game day (48 real world minutes). 0 = off.\n"
+			";Mod default = 2");
+		ini.SetBoolValue("STAMINA", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth, ";Drain health core if stamina core goes red");
 		
 		ini.SetValue("HURTING", nullptr, nullptr,
 			";If health core turns red (16% or lower) how long will it take the health ring to completely drain from max.\n"
@@ -69,11 +73,13 @@ ModConfig LoadConfig()
 	cfg.DisableMod = ini.GetBoolValue("MISC", "DISABLE_MOD", cfg.DisableMod);
 
 	cfg.DeadEyeDurationCost = static_cast<float>(ini.GetDoubleValue("DEAD_EYE", "DURATION_COST", cfg.DeadEyeDurationCost));
-	cfg.DeadEyeActivationCoste = static_cast<float>(ini.GetDoubleValue("DEAD_EYE", "ACTIVATION_COST", cfg.DeadEyeActivationCoste));
+	cfg.DeadEyeActivationCost = static_cast<float>(ini.GetDoubleValue("DEAD_EYE", "ACTIVATION_COST", cfg.DeadEyeActivationCost));
 
 	cfg.HealingThreshold = static_cast<int>(ini.GetLongValue("HEALTH", "HEALING_THRESHOLD", cfg.HealingThreshold));
 	cfg.HealthCoreDrainsPerDay = static_cast<float>(ini.GetDoubleValue("HEALTH", "CORE_DRAINS_PER_DAY", cfg.HealthCoreDrainsPerDay));
-	cfg.StaminaHurtsHealth = ini.GetBoolValue("HEALTH", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth);
+
+	cfg.StaminaCoreDrainsPerDay = static_cast<float>(ini.GetDoubleValue("STAMINA", "CORE_DRAINS_PER_DAY", cfg.StaminaCoreDrainsPerDay));
+	cfg.StaminaHurtsHealth = ini.GetBoolValue("STAMINA", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth);
 
 	cfg.HurtingTimeToDieMin = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MIN", cfg.HurtingTimeToDieMin));
 	cfg.HurtingTimeToDieMax = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MAX", cfg.HurtingTimeToDieMax));

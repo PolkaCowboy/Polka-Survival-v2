@@ -12,11 +12,14 @@ struct ModConfig
 
 	//Deadeye
 	float DeadEyeDurationCost = 10.0f; //[Game default ~4.27]
-	float DeadEyeActivationCoste = 10.0f;
+	float DeadEyeActivationCost = 10.0f;
 
 	//Health Core
 	int HealingThreshold = 50;
 	float HealthCoreDrainsPerDay = 2.0f;
+
+	//Stamina Core
+	float StaminaCoreDrainsPerDay = 2.0f;
 	bool StaminaHurtsHealth = true;
 
 	//Hurting

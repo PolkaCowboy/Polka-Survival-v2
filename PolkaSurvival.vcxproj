@@ -18,6 +18,8 @@
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\paths.cpp" />
     <ClCompile Include="src\ui.cpp" />
+    <ClCompile Include="src\coredrain.cpp" />
+    <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\script.h" />
@@ -26,6 +28,8 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\paths.h" />
     <ClInclude Include="src\ui.h" />
+    <ClInclude Include="src\coredrain.h" />
+    <ClInclude Include="src\utils.h" />
     <ClInclude Include="inc\sdk.h" />
     <ClInclude Include="inc\SimpleIni.h" />
     <ClInclude Include="inc\types.h" />
@@ -63,15 +67,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
     <!--
-      Set this to your RDR2 folder to copy the built .asi there automatically,
-      e.g. C:\Program Files\Epic Games\RedDeadRedemption2
+      Your RDR2 folder. The post-build step copies the built .asi there and
+      creates the mod's data folder. Clear it to disable deployment.
 
-      Left empty by default on purpose. The game lives under Program Files, so
-      the copy only succeeds if Visual Studio is running elevated; wiring it up
-      unconditionally would give you a build that fails for a confusing reason.
+      Under Program Files this normally needs an elevated Visual Studio; on this
+      machine the game folder grants Users full control, so it doesn't.
+      The .asi is locked while the game has it loaded: Ctrl+R to unload first.
     -->
-    <RDR2GameDir>
-    </RDR2GameDir>
+    <RDR2GameDir>C:\Program Files\Epic Games\RedDeadRedemption2</RDR2GameDir>
   </PropertyGroup>
   <PropertyGroup>
     <LinkIncremental Condition="'$(Configuration)'=='Release'">false</LinkIncremental>
@@ -94,8 +97,12 @@
       <AdditionalDependencies>ScriptHookRDR2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command Condition="'$(RDR2GameDir)' != ''">xcopy /Y /D "$(TargetPath)" "$(RDR2GameDir)\"</Command>
-      <Message Condition="'$(RDR2GameDir)' != ''">Copying $(TargetFileName) to $(RDR2GameDir)</Message>
+      <Command Condition="'$(RDR2GameDir)' != ''">
+        xcopy /Y /D "$(TargetPath)" "$(RDR2GameDir)\"
+        if not exist "$(RDR2GameDir)\PolkaMods\$(ProjectName)\" mkdir "$(RDR2GameDir)\PolkaMods\$(ProjectName)"
+        if exist "$(ProjectDir)content\" xcopy /Y /D /E /I "$(ProjectDir)content\*" "$(RDR2GameDir)\PolkaMods\$(ProjectName)\"
+      </Command>
+      <Message Condition="'$(RDR2GameDir)' != ''">Deploying $(TargetFileName) and content to $(RDR2GameDir)</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
@@ -107,9 +114,6 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /y /d "$(TargetPath)" "C:\Program Files\Epic Games\RedDeadRedemption2\"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
