@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\elasticinterval.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\script.cpp" />
     <ClCompile Include="src\keyboard.cpp" />
@@ -22,6 +23,7 @@
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\elasticinterval.h" />
     <ClInclude Include="src\script.h" />
     <ClInclude Include="src\keyboard.h" />
     <ClInclude Include="src\log.h" />
@@ -48,10 +50,8 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <!-- A .asi is just a DLL with a different extension. -->
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
-    <!-- MultiByte, not Unicode: every native takes char*, never wchar_t*. -->
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -66,14 +66,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <!--
-      Your RDR2 folder. The post-build step copies the built .asi there and
-      creates the mod's data folder. Clear it to disable deployment.
-
-      Under Program Files this normally needs an elevated Visual Studio; on this
-      machine the game folder grants Users full control, so it doesn't.
-      The .asi is locked while the game has it loaded: Ctrl+R to unload first.
-    -->
     <RDR2GameDir>C:\Program Files\Epic Games\RedDeadRedemption2</RDR2GameDir>
   </PropertyGroup>
   <PropertyGroup>
