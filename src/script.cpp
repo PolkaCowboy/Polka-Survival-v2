@@ -42,6 +42,8 @@ void ScriptMain()
 		Log::Write(std::format("ScriptMain started"));
 	}
 
+	ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(PLAYER::PLAYER_PED_ID(), ATTRIBUTE_CORE_HEALTH, 17);
+
 	while (true)
 	{
 		debugMessages.clear();
@@ -65,7 +67,7 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
-		HurtUpdate(hurtState, playerPed, dtMs, debugMessages);
+		HurtUpdate(hurtState, player, playerPed, dtMs, g_config, debugMessages);
 
 		if (IsKeyJustUp(VK_F19))
 			g_showOverlay = !g_showOverlay;

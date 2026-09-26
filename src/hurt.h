@@ -15,4 +15,4 @@ struct HurtState {
 };
 
 void HurtInit(HurtState& state, const ModConfig& cfg);
-void HurtUpdate(HurtState& state, Ped player, int dtMs, std::vector<std::string>& debug);
+void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);

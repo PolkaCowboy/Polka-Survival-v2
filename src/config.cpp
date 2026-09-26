@@ -54,6 +54,9 @@ ModConfig LoadConfig()
 			";Mod default 1.5 minutes");
 		ini.SetValue("HURTING", "HURTING_TIME_TO_DIE_MAX", std::format("{:g}", cfg.HurtingTimeToDieMax).c_str(),
 			";Mod default 3 minutes");
+		ini.SetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal,
+			";true = hurting can kill you. false = only the outer health ring drains, keeping the core HP as a reserve.\n"
+			";Mod default = true");
 
 		ini.SetValue("HYPOTHERMIA", nullptr, nullptr, "; Times are in real world seconds.");
 		ini.SetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
@@ -83,6 +86,7 @@ ModConfig LoadConfig()
 
 	cfg.HurtingTimeToDieMin = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MIN", cfg.HurtingTimeToDieMin));
 	cfg.HurtingTimeToDieMax = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MAX", cfg.HurtingTimeToDieMax));
+	cfg.HurtingIsLethal = ini.GetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal);
 
 	cfg.EnableHypothermia = ini.GetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
 	cfg.TimeToGetWet = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_GET_WET", cfg.TimeToGetWet));

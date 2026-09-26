@@ -23,8 +23,9 @@ struct ModConfig
 	bool StaminaHurtsHealth = true;
 
 	//Hurting
-	float HurtingTimeToDieMin = 1.5f;
-	float HurtingTimeToDieMax = 3.0f;
+	float HurtingTimeToDieMin = 1.5f; //Minutes
+	float HurtingTimeToDieMax = 3.0f; //Minutes
+	bool HurtingIsLethal = true; //Only drain the outer ring keeping the core HP as a reserve if false.
 
 	//Hypothermia
 	bool EnableHypothermia = true;
