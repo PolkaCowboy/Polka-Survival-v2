@@ -25,7 +25,7 @@ struct ModConfig
 	//Hurting
 	float HurtingTimeToDieMin = 1.5f; //Minutes
 	float HurtingTimeToDieMax = 3.0f; //Minutes
-	bool HurtingIsLethal = true; //Only drain the outer ring keeping the core HP as a reserve if false.
+	bool HurtingIsLethal = true; //True: You will die when HP ticks to zero. False: Health will stop ticking when outer ring hits 0 and core will stop ticking at 1, leaving you very squishy until you can eat
 
 	//Hypothermia
 	bool EnableHypothermia = true;

@@ -31,12 +31,13 @@ namespace
 		return static_cast<int>(std::round(static_cast<double>(MS_PER_DAY) / TICKS_TO_EMPTY / drainsPerDay));
 	}
 
-	void DrainCore(Ped ped, int core, int drains)
+	//limit: How long we can drain to. Set above 0 to keep health drain non-lethal.
+	void DrainCore(Ped ped, int core, int drains, int limit = 0)
 	{
 		if (drains <= 0)
 			return;
 		int value = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, core);
-		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(0, value - drains * CORE_POINTS_PER_TICK));
+		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, value - drains * CORE_POINTS_PER_TICK));
 	}
 
 }
@@ -64,7 +65,7 @@ void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const 
 
 
 
-	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate));
+	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);
 	DrainCore(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
 
 	debug.push_back(std::format("Next Drain In: H({}):{} S({}):{}", healthCoreRate, Utils::FormatDuration(state.healthCore.RemainingMs(healthCoreRate)), staminaCoreRate, Utils::FormatDuration(state.staminaCore.RemainingMs(staminaCoreRate))));
@@ -94,17 +95,22 @@ void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const 
 	debug.push_back(std::format("Next HP Drain In ({}) {}", hitpointsRate, Utils::FormatDuration(state.hitPoints.RemainingMs(hitpointsRate))));
 	debug.push_back(std::format("Player HP {}/{}", ENTITY::GET_ENTITY_HEALTH(playerPed), ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)));
 	debug.push_back(std::format("Healing rate {}>={} = {}", cfg.HealingThreshold, playerHealthCoreValue, healingRate));
-	
 
 
 	//Ding hit points. We only do this beyond the hurting threshold
 	if (numHpDrains > 0) {
-		debug.push_back("Hurting due to health core");
-
 		//ENTITY::GET_ENTITY_MAX_HEALTH returns total of outer ring plus 100 hp from a full core. FYI
 		float drainPerStep = static_cast<float>(ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)) / HITPOINT_DRAIN_STEPS;
 
-		//TODO: Dont' let this exceed health core value if configured to be non-lethal
+		if (!cfg.HurtingIsLethal) {
+			int currentHealth = ENTITY::GET_ENTITY_HEALTH(playerPed);
+			int estNewHealth = currentHealth - (drainPerStep * numHpDrains);
+			if (estNewHealth <= playerHealthCoreValue) {
+				ENTITY::SET_ENTITY_HEALTH(playerPed, playerHealthCoreValue, 0);
+				return;
+			}
+		}
+
 		ENTITY::_CHANGE_ENTITY_HEALTH(playerPed, -drainPerStep * numHpDrains, 0, 0);
 
 	}
