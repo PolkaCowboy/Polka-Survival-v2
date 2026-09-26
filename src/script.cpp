@@ -41,7 +41,8 @@ void ScriptMain()
 		Log::Init();
 		Log::Write(std::format("ScriptMain started"));
 	}
-
+	
+	//Debug thing to remove
 	ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(PLAYER::PLAYER_PED_ID(), ATTRIBUTE_CORE_HEALTH, 17);
 
 	while (true)

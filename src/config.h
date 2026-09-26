@@ -21,10 +21,11 @@ struct ModConfig
 	//Stamina Core
 	float StaminaCoreDrainsPerDay = 2.0f;
 	bool StaminaHurtsHealth = true;
+	float ImproperClothingStaminaDrainRate = 0.1f; //Addiditional stamina drain if outfit isn't proper for the weather. Float percentage betweem 0 - 1. 0.1 = 10%
 
 	//Hurting
-	float HurtingTimeToDieMin = 1.5f; //Minutes
-	float HurtingTimeToDieMax = 3.0f; //Minutes
+	float HurtingTimeToDieMin = 1.75f; //Minutes
+	float HurtingTimeToDieMax = 6.0f; //Minutes
 	bool HurtingIsLethal = true; //True: You will die when HP ticks to zero. False: Health will stop ticking when outer ring hits 0 and core will stop ticking at 1, leaving you very squishy until you can eat
 
 	//Hypothermia

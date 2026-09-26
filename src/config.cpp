@@ -44,6 +44,9 @@ ModConfig LoadConfig()
 			";How many times the stamina core should fully drain per in-game day (48 real world minutes). 0 = off.\n"
 			";Mod default = 2");
 		ini.SetBoolValue("STAMINA", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth, ";Drain health core if stamina core goes red");
+		ini.SetValue("STAMINA", "IMPROPER_CLOTHING_DRAIN_RATE", std::format("{:g}", cfg.ImproperClothingStaminaDrainRate).c_str(),
+			";Extra stamina core drain when the outfit doesn't suit the weather. 0.1 = 10% faster. 0 = off.\n"
+			";Mod default = 0.1");
 		
 		ini.SetValue("HURTING", nullptr, nullptr,
 			";If health core turns red (16% or lower) how long will it take the health ring to completely drain from max.\n"
@@ -55,7 +58,7 @@ ModConfig LoadConfig()
 		ini.SetValue("HURTING", "HURTING_TIME_TO_DIE_MAX", std::format("{:g}", cfg.HurtingTimeToDieMax).c_str(),
 			";Mod default 3 minutes");
 		ini.SetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal,
-			";true = hurting can kill you. false = only the outer health ring drains, keeping the core HP as a reserve.\n"
+			";true = hurting can kill you. false = All health core drains will stop at 1hp leaving you very squishy while restoring your core.\n"
 			";Mod default = true");
 
 		ini.SetValue("HYPOTHERMIA", nullptr, nullptr, "; Times are in real world seconds.");
@@ -83,6 +86,7 @@ ModConfig LoadConfig()
 
 	cfg.StaminaCoreDrainsPerDay = static_cast<float>(ini.GetDoubleValue("STAMINA", "CORE_DRAINS_PER_DAY", cfg.StaminaCoreDrainsPerDay));
 	cfg.StaminaHurtsHealth = ini.GetBoolValue("STAMINA", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth);
+	cfg.ImproperClothingStaminaDrainRate = static_cast<float>(ini.GetDoubleValue("STAMINA", "IMPROPER_CLOTHING_DRAIN_RATE", cfg.ImproperClothingStaminaDrainRate));
 
 	cfg.HurtingTimeToDieMin = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MIN", cfg.HurtingTimeToDieMin));
 	cfg.HurtingTimeToDieMax = static_cast<float>(ini.GetDoubleValue("HURTING", "HURTING_TIME_TO_DIE_MAX", cfg.HurtingTimeToDieMax));

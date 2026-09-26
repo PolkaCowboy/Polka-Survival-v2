@@ -59,8 +59,7 @@ void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const 
 	double hitpointsRate = 0.0;
 
 	if (bodyheat != 50) {
-		//Todo: Move into config. 
-		staminaCoreRate += .1;
+		staminaCoreRate += cfg.ImproperClothingStaminaDrainRate;
 	}
 
 
@@ -104,7 +103,7 @@ void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const 
 
 		if (!cfg.HurtingIsLethal) {
 			int currentHealth = ENTITY::GET_ENTITY_HEALTH(playerPed);
-			int estNewHealth = currentHealth - (drainPerStep * numHpDrains);
+			int estNewHealth = static_cast<int>(std::round(currentHealth - (drainPerStep * numHpDrains)));
 			if (estNewHealth <= playerHealthCoreValue) {
 				ENTITY::SET_ENTITY_HEALTH(playerPed, playerHealthCoreValue, 0);
 				return;
