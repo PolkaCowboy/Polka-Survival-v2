@@ -19,7 +19,7 @@
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\paths.cpp" />
     <ClCompile Include="src\ui.cpp" />
-    <ClCompile Include="src\coredrain.cpp" />
+    <ClCompile Include="src\hurt.cpp" />
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -30,7 +30,7 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\paths.h" />
     <ClInclude Include="src\ui.h" />
-    <ClInclude Include="src\coredrain.h" />
+    <ClInclude Include="src\hurt.h" />
     <ClInclude Include="src\utils.h" />
     <ClInclude Include="inc\sdk.h" />
     <ClInclude Include="inc\SimpleIni.h" />

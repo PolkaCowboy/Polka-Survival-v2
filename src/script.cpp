@@ -3,7 +3,7 @@
 #include "log.h"
 #include "config.h"
 #include "ui.h"
-#include "coredrain.h"
+#include "hurt.h"
 #include "utils.h"
 
 
@@ -21,14 +21,14 @@ namespace
 void ScriptMain()
 {
 	// All the running timers and flags
-	CoreDrainState coreDrainSate;
+	HurtState hurtState;
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
 	bool g_showOverlay = true;
 
 	//Set up states
-	CoreDrainInit(coreDrainSate, g_config);
+	HurtInit(hurtState, g_config);
 
 	if (g_config.DisableMod)
 		return;
@@ -50,7 +50,8 @@ void ScriptMain()
 		Ped playerPed = PLAYER::PLAYER_PED_ID();
 
 		int now = MISC::GET_GAME_TIMER();
-		int dtMs = std::clamp(now - lastNow, 0, MAX_FRAME_MS);
+		int rawDtMs = now - lastNow;
+		int dtMs = std::clamp(rawDtMs, 0, MAX_FRAME_MS);
 		lastNow = now;
 
 		/* Monitor health */
@@ -64,7 +65,7 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
-		CoreDrainUpdate(coreDrainSate, playerPed, dtMs, debugMessages);
+		HurtUpdate(hurtState, playerPed, dtMs, debugMessages);
 
 		if (IsKeyJustUp(VK_F19))
 			g_showOverlay = !g_showOverlay;

@@ -1,4 +1,4 @@
-#include "coredrain.h"
+#include "hurt.h"
 #include "utils.h"
 
 #include <cmath>
@@ -37,12 +37,12 @@ namespace
 
 }
 
-void CoreDrainInit(CoreDrainState& state, const ModConfig& cfg) {
-	state.health = ElasticInterval(DrainInterval(cfg.HealthCoreDrainsPerDay));
-	state.stamina = ElasticInterval(DrainInterval(cfg.StaminaCoreDrainsPerDay));
+void HurtInit(HurtState& state, const ModConfig& cfg) {
+	state.healthCore = ElasticInterval(DrainInterval(cfg.HealthCoreDrainsPerDay));
+	state.staminaCore = ElasticInterval(DrainInterval(cfg.StaminaCoreDrainsPerDay));
 }
 
-void CoreDrainUpdate(CoreDrainState& state, Ped player, int dtMs, std::vector<std::string>& debug) {
+void HurtUpdate(HurtState& state, Ped player, int dtMs, std::vector<std::string>& debug) {
 
 	//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
 	int bodyheat = ATTRIBUTE::GET_ATTRIBUTE_POINTS(player, SA_BODYHEAT);
@@ -56,10 +56,10 @@ void CoreDrainUpdate(CoreDrainState& state, Ped player, int dtMs, std::vector<st
 		staminaCoreRate += .1;
 	}
 
-	DrainCore(player, ATTRIBUTE_CORE_HEALTH, state.health.Update(dtMs, healthCoreRate));
-	DrainCore(player, ATTRIBUTE_CORE_STAMINA, state.stamina.Update(dtMs, staminaCoreRate));
+	DrainCore(player, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate));
+	DrainCore(player, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
 
-	debug.push_back(std::format("Next Drain In: H({}):{} S({}):{}", healthCoreRate, Utils::FormatDuration(state.health.RemainingMs(healthCoreRate)), staminaCoreRate, Utils::FormatDuration(state.stamina.RemainingMs(staminaCoreRate))));
+	debug.push_back(std::format("Next Drain In: H({}):{} S({}):{}", healthCoreRate, Utils::FormatDuration(state.healthCore.RemainingMs(healthCoreRate)), staminaCoreRate, Utils::FormatDuration(state.staminaCore.RemainingMs(staminaCoreRate))));
 
 }
 
