@@ -4,6 +4,8 @@
 #include "config.h"
 #include "ui.h"
 #include "hurt.h"
+#include "hypothermia.h"
+#include "wetness.h"
 #include "utils.h"
 
 
@@ -22,6 +24,8 @@ void ScriptMain()
 {
 	// All the running timers and flags
 	HurtState hurtState;
+	HypothermiaState hypothermiaState;
+	WetnessState wetnessState;
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
@@ -29,6 +33,8 @@ void ScriptMain()
 
 	//Set up states
 	HurtInit(hurtState, g_config);
+	HypothermiaInit(hypothermiaState, g_config);
+	WetnessInit(wetnessState, g_config);
 
 	if (g_config.DisableMod)
 		return;
@@ -68,7 +74,10 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
-		HurtUpdate(hurtState, player, playerPed, dtMs, g_config, debugMessages);
+		WetnessUpdate(wetnessState, playerPed, dtMs, g_config, debugMessages);
+		//HypothermiaUpdate(hypothermiaState, playerPed, wetnessState.wetness.Value(), dtMs, g_config, debugMessages);
+		HurtUpdate(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
+		
 
 		if (IsKeyJustUp(VK_F19))
 			g_showOverlay = !g_showOverlay;

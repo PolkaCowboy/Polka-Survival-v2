@@ -33,10 +33,18 @@
     <ClCompile Include="src\hurt.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\hypothermia.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wetness.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="src\utils.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\elasticinterval.cpp" />
+    <ClCompile Include="src\elasticinterval.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\script.h">
@@ -58,6 +66,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\hurt.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hypothermia.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wetness.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\utils.h">
@@ -87,6 +101,8 @@
     <ClInclude Include="inc\main.h">
       <Filter>sdk</Filter>
     </ClInclude>
-    <ClInclude Include="src\elasticinterval.h" />
+    <ClInclude Include="src\elasticinterval.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

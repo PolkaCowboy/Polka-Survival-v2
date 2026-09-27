@@ -7,6 +7,8 @@
 #include <vector>
 #include <string>
 
+struct HypothermiaEffects;
+
 // All the timers for when to drain a core or hp next
 struct HurtState { 
 	ElasticInterval healthCore;
@@ -15,4 +17,4 @@ struct HurtState {
 };
 
 void HurtInit(HurtState& state, const ModConfig& cfg);
-void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);
+void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);

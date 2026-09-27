@@ -21,7 +21,7 @@ struct ModConfig
 	//Stamina Core
 	float StaminaCoreDrainsPerDay = 2.0f;
 	bool StaminaHurtsHealth = true;
-	float ImproperClothingStaminaDrainRate = 0.1f; //Addiditional stamina drain if outfit isn't proper for the weather. Float percentage betweem 0 - 1. 0.1 = 10%
+	float ImproperClothingStaminaDrainRate = 0.1f; //Additional stamina drain if outfit isn't proper for the weather. Float percentage betweem 0 - 1. 0.1 = 10%
 
 	//Hurting
 	float HurtingTimeToDieMin = 1.75f; //Minutes
@@ -30,8 +30,8 @@ struct ModConfig
 
 	//Hypothermia
 	bool EnableHypothermia = true;
-	float TimeToGetWet = 5.0f;
-	float TimeToDry = 30.0f;
+	float MinTimeToGetSoaked = 30.0f; //Seconds. Time to get 100% soaked in Full rainstorm.
+	float MinTimeToDry = 30.0f; //Seconds. Time to completly dry without a heat source in a warm dry climate. Campfires/heatsources will accelerate this. Other weather factors will slow this.
 
 	bool enableTextLogging = true;
 

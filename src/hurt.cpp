@@ -1,4 +1,5 @@
 #include "hurt.h"
+#include "hypothermia.h"
 #include "utils.h"
 
 #include <cmath>
@@ -48,7 +49,7 @@ void HurtInit(HurtState& state, const ModConfig& cfg) {
 	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(cfg.HurtingTimeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
 }
 
-void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug) {
+void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
 
 	//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
 	int bodyheat = ATTRIBUTE::GET_ATTRIBUTE_POINTS(playerPed, SA_BODYHEAT);
@@ -62,6 +63,8 @@ void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const 
 		staminaCoreRate += cfg.ImproperClothingStaminaDrainRate;
 	}
 
+	healthCoreRate += weatherEffects.healthCoreDrainModifier;
+	staminaCoreRate += weatherEffects.staminaCoreDrainModifier;
 
 
 	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);

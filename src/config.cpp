@@ -63,9 +63,13 @@ ModConfig LoadConfig()
 
 		ini.SetValue("HYPOTHERMIA", nullptr, nullptr, "; Times are in real world seconds.");
 		ini.SetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
-		ini.SetValue("HYPOTHERMIA", "TIME_TO_GET_WET", std::format("{:g}", cfg.TimeToGetWet).c_str(), 
-			";How long you need to be in water before gettiong soaked.");
-		ini.SetValue("HYPOTHERMIA", "TIME_TO_DRY", std::format("{:g}", cfg.TimeToDry).c_str());
+		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", std::format("{:g}", cfg.MinTimeToGetSoaked).c_str(),
+			";How long it takes to get 100% soaked in a full rainstorm.\n"
+			";Mod default = 30");
+		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", std::format("{:g}", cfg.MinTimeToDry).c_str(),
+			";How long it takes to dry off completely in a warm, dry climate without a heat source.\n"
+			";Campfires and other heat sources speed this up; other weather slows it down.\n"
+			";Mod default = 30");
 
 		ini.SaveFile(ConfigPath().c_str(), false); // false = no UTF-8 BOM
 		return cfg;
@@ -93,8 +97,8 @@ ModConfig LoadConfig()
 	cfg.HurtingIsLethal = ini.GetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal);
 
 	cfg.EnableHypothermia = ini.GetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
-	cfg.TimeToGetWet = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_GET_WET", cfg.TimeToGetWet));
-	cfg.TimeToDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_DRY", cfg.TimeToDry));
+	cfg.MinTimeToGetSoaked = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", cfg.MinTimeToGetSoaked));
+	cfg.MinTimeToDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", cfg.MinTimeToDry));
 
 	return cfg;
 }
