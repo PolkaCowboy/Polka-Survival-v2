@@ -33,6 +33,9 @@
     <ClCompile Include="src\hurt.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\exposurering.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="src\hypothermia.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -69,6 +72,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\hurt.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\exposurering.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\hypothermia.h">

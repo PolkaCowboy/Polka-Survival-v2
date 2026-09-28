@@ -21,6 +21,7 @@
     <ClCompile Include="src\paths.cpp" />
     <ClCompile Include="src\ui.cpp" />
     <ClCompile Include="src\hurt.cpp" />
+    <ClCompile Include="src\exposurering.cpp" />
     <ClCompile Include="src\hypothermia.cpp" />
     <ClCompile Include="src\wetness.cpp" />
     <ClCompile Include="src\utils.cpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="src\paths.h" />
     <ClInclude Include="src\ui.h" />
     <ClInclude Include="src\hurt.h" />
+    <ClInclude Include="src\exposurering.h" />
     <ClInclude Include="src\hypothermia.h" />
     <ClInclude Include="src\wetness.h" />
     <ClInclude Include="src\utils.h" />

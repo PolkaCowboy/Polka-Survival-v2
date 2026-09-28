@@ -19,6 +19,7 @@ struct HypothermiaEffects
 struct HypothermiaState
 {
 	HypothermiaEffects effects;
+	float severity = 0.0f; // 0 = fine, 1 = not fine. Drives the exposure ring's cold icon.
 };
 
 void HypothermiaInit(HypothermiaState& state, const ModConfig& cfg);

@@ -60,6 +60,58 @@ namespace
 	{
 		return std::format("{:g}F", CelsiusToFahrenheit(celsius));
 	}
+
+	struct CompassName
+	{
+		CompassType type;
+		const char* name;
+	};
+	const CompassName COMPASS_NAMES[] = {
+		{ CompassType::Regular, "REGULAR" },
+		{ CompassType::Expanded, "EXPANDED" },
+		{ CompassType::Simple, "COMPASS" }, // the game menu's "Compass" option
+		{ CompassType::Off, "OFF" },
+	};
+
+	const char* CompassToString(CompassType type)
+	{
+		for (const CompassName& c : COMPASS_NAMES)
+		{
+			if (c.type == type)
+				return c.name;
+		}
+		return "REGULAR";
+	}
+
+	// Case-insensitive. Anything unrecognised keeps the current value.
+	CompassType ReadCompassType(const CSimpleIniA& ini, const char* section, const char* key, CompassType current)
+	{
+		const char* text = ini.GetValue(section, key, nullptr);
+		if (!text)
+			return current;
+		for (const CompassName& c : COMPASS_NAMES)
+		{
+			if (_stricmp(text, c.name) == 0)
+				return c.type;
+		}
+		return current;
+	}
+
+	// Each placement is three keys: <PREFIX>_X, <PREFIX>_Y, <PREFIX>_SIZE.
+	void WritePlacement(CSimpleIniA& ini, const char* section, const std::string& prefix, const RingPlacement& p, const char* comment)
+	{
+		ini.SetValue(section, (prefix + "_X").c_str(), std::format("{:g}", p.x).c_str(), comment);
+		ini.SetValue(section, (prefix + "_Y").c_str(), std::format("{:g}", p.y).c_str());
+		ini.SetValue(section, (prefix + "_SIZE").c_str(), std::format("{:g}", p.size).c_str());
+	}
+
+	RingPlacement ReadPlacement(const CSimpleIniA& ini, const char* section, const std::string& prefix, RingPlacement p)
+	{
+		p.x = static_cast<float>(ini.GetDoubleValue(section, (prefix + "_X").c_str(), p.x));
+		p.y = static_cast<float>(ini.GetDoubleValue(section, (prefix + "_Y").c_str(), p.y));
+		p.size = static_cast<float>(ini.GetDoubleValue(section, (prefix + "_SIZE").c_str(), p.size));
+		return p;
+	}
 }
 
 ModConfig LoadConfig()
@@ -83,11 +135,11 @@ ModConfig LoadConfig()
 			";Percent that the health core needs to be above before the health ring heals.\n"
 			";Mod default = 50");
 		ini.SetValue("HEALTH", "CORE_DRAINS_PER_DAY", std::format("{:g}", cfg.HealthCoreDrainsPerDay).c_str(),
-			";How many times the health core should fully drain per in-game day (48 real world minutes). 0 = off.\n"
+			";How many times the health core should fully drain per in-game day (48 real world minutes).\n"
 			";Mod default = 2");
 
 		ini.SetValue("STAMINA", "CORE_DRAINS_PER_DAY", std::format("{:g}", cfg.StaminaCoreDrainsPerDay).c_str(),
-			";How many times the stamina core should fully drain per in-game day (48 real world minutes). 0 = off.\n"
+			";How many times the stamina core should fully drain per in-game day (48 real world minutes).\n"
 			";Mod default = 2");
 		ini.SetBoolValue("STAMINA", "STAMINA_HURTS_HEALTH", cfg.StaminaHurtsHealth, ";Drain health core if stamina core goes red");
 		ini.SetValue("STAMINA", "IMPROPER_CLOTHING_DRAIN_RATE", std::format("{:g}", cfg.ImproperClothingStaminaDrainRate).c_str(),
@@ -137,6 +189,22 @@ ModConfig LoadConfig()
 			";Freezing.\n"
 			";Mod default = 32F");
 
+		ini.SetValue("HUD", nullptr, nullptr,
+			";The exposure ring: fills blue as you get wet, shows a cold icon when hypothermia sets in,\n"
+			";and the icon pulses when the cold is costing you health.\n"
+			";Position and size are in pixels on a 1920x1080 screen, whatever your actual resolution:\n"
+			";_X and _Y are the centre of the ring from the left and top edges.");
+		ini.SetBoolValue("HUD", "SHOW_EXPOSURE_RING", cfg.ShowExposureRing, ";Mod default = true");
+		ini.SetValue("HUD", "COMPASS_TYPE", CompassToString(cfg.Compass),
+			";The compass type you play with (hold Alt in game to change it): REGULAR, EXPANDED, COMPASS or OFF.\n"
+			";The game doesn't tell mods which one is set, so the ring uses this to know where to sit.\n"
+			";Mod default = REGULAR");
+		WritePlacement(ini, "HUD", "RING_REGULAR", cfg.RingRegular, ";Ring placement in the regular (small) HUD layout. Mod default = 46, 847, 50");
+		WritePlacement(ini, "HUD", "RING_COMPASS", cfg.RingCompass, ";Ring placement with the COMPASS or OFF options (the game uses one layout for both). Mod default = 87, 986, 50");
+		WritePlacement(ini, "HUD", "RING_EXPANDED", cfg.RingExpanded,
+			";Ring placement in the expanded HUD layout: the EXPANDED compass, and briefly after tapping Alt\n"
+			";or while the weapon wheel is open. Mod default = 47, 777, 65");
+
 		ini.SaveFile(ConfigPath().c_str(), false); // false = no UTF-8 BOM
 		return cfg;
 	}
@@ -171,6 +239,12 @@ ModConfig LoadConfig()
 	cfg.NominalTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "NOMINAL", cfg.NominalTemperatureC);
 	cfg.ExtremeTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "EXTREME", cfg.ExtremeTemperatureC);
 	cfg.FreezingTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "FREEZING", cfg.FreezingTemperatureC);
+
+	cfg.ShowExposureRing = ini.GetBoolValue("HUD", "SHOW_EXPOSURE_RING", cfg.ShowExposureRing);
+	cfg.Compass = ReadCompassType(ini, "HUD", "COMPASS_TYPE", cfg.Compass);
+	cfg.RingRegular = ReadPlacement(ini, "HUD", "RING_REGULAR", cfg.RingRegular);
+	cfg.RingCompass = ReadPlacement(ini, "HUD", "RING_COMPASS", cfg.RingCompass);
+	cfg.RingExpanded = ReadPlacement(ini, "HUD", "RING_EXPANDED", cfg.RingExpanded);
 
 	return cfg;
 }

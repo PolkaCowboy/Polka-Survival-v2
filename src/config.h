@@ -3,6 +3,23 @@
 #include <windows.h>
 #include <string>
 
+// The game's compass (minimap) setting, chosen by holding Alt. No native reports it.
+enum class CompassType
+{
+	Regular,
+	Expanded,
+	Simple, // called "Compass" in the game's menu; INI value COMPASS
+	Off,
+};
+
+// Where the exposure ring sits: centre and size in 1920x1080 pixels, whatever the real resolution.
+struct RingPlacement
+{
+	float x = 0.0f;
+	float y = 0.0f;
+	float size = 0.0f;
+};
+
 struct ModConfig
 {
 
@@ -39,6 +56,15 @@ struct ModConfig
 	float NominalTemperatureC = 20.0f; //68F
 	float ExtremeTemperatureC = 32.0f; //89.6F
 	float FreezingTemperatureC = 0.0f; //32F
+
+	//HUD. The compass type the player starts with, and the ring's placement for each HUD layout:
+	//regular (small); compass, which the Compass and Off options share; and expanded, which the
+	//Expanded compass, an Alt tap and the weapon wheel all use.
+	bool ShowExposureRing = true;
+	CompassType Compass = CompassType::Regular;
+	RingPlacement RingRegular{ 46.0f, 847.0f, 50.0f };
+	RingPlacement RingCompass{ 87.0f, 986.0f, 50.0f };
+	RingPlacement RingExpanded{ 47.0f, 777.0f, 65.0f };
 
 	bool enableTextLogging = true;
 

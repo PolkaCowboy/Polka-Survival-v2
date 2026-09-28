@@ -16,10 +16,22 @@ namespace
 	// One in-game day: 48 real world minutes;
 	constexpr int MS_PER_DAY = 48 * 60 * 1000;
 
-	// Reducing the core HP by 1 sometimes got weird and would heal instead of hurt. Booo
-	// So do 2hp 50 times per day instead of 1hp 100 times.
-	constexpr int CORE_POINTS_PER_TICK = 2;
-	constexpr int TICKS_TO_EMPTY = 100 / CORE_POINTS_PER_TICK; // 50
+	// Initially I had this set up to reduce by 2 because reducing the core HP by 1 sometimes got weird and would heal instead of hurt. Booo
+	// Later figured out it wasn't the 1hp reduction specifically, but landing on certain values that would always bounce back. 
+	// Working around this with GetTrueNewCoreValue();
+	constexpr int CORE_POINTS_PER_TICK = 1;
+	constexpr int TICKS_TO_EMPTY = 100 / CORE_POINTS_PER_TICK;
+
+	// The game's own script keeps a float copy of each core and ~1.5 s after a change writes back
+	// CEIL() of it. Float round-off turns these five values into x.000001, so they come back +1.
+	// The core jump will create a trap where we can't ever drain past them if we keep hitting the same value. 
+	// Solution: drain by 1 more hp when these troublemakers are encountered.
+	int GetSafeCoreDrainValue(int v) {
+		if (v == 15 || v == 27 || v == 30 || v == 54 || v == 60) {
+			return v - 1;
+		}
+		return v;
+	}
 
 	//16 is the point when the health core turns from white to red. Red core = drain HP
 	constexpr int HURTING_THRESHOLD = 16;
@@ -38,8 +50,10 @@ namespace
 		if (drains <= 0)
 			return;
 		int value = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, core);
-		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, value - drains * CORE_POINTS_PER_TICK));
+		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains * CORE_POINTS_PER_TICK)));
 	}
+
+
 
 }
 
@@ -67,7 +81,6 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 	healthCoreRate += weatherEffects.healthCoreDrainModifier;
 	staminaCoreRate += weatherEffects.staminaCoreDrainModifier;
-
 
 	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);
 	DrainCore(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
