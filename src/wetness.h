@@ -27,11 +27,11 @@ struct WetnessState
 	Wetness wetness;
 	float fullRainWetPerSecond = 0.0f;
 	float nominalDrydownPerSecond = 0.0f;
+	float nominalSweatPerSecond = 0.0f;
 	float rainExposure = 0.0f;
-	
-	int msUntilCoverProbe = 400;
+
 	int nextCoverProbe = 0;
 };
 
 void WetnessInit(WetnessState& state, const ModConfig& cfg);
-void WetnessUpdate(WetnessState& state, Ped playerPed, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);
+void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);

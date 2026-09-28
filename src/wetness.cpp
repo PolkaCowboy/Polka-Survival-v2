@@ -1,4 +1,5 @@
 #include "wetness.h"
+#include "utils.h"
 
 #include <format>
 #include <cmath>
@@ -82,12 +83,13 @@ namespace
 
 void WetnessInit(WetnessState& state, const ModConfig& cfg)
 {
-	state = WetnessState{}; 
+	state = WetnessState{};
 	state.fullRainWetPerSecond = RatePerSecond(cfg.MinTimeToGetSoaked);
 	state.nominalDrydownPerSecond = RatePerSecond(cfg.MinTimeToDry);
+	state.nominalSweatPerSecond = RatePerSecond(cfg.NominalMaxSweatTime) * cfg.MaxSweatAccumulation;
 }
 
-void WetnessUpdate(WetnessState& state, Ped playerPed, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
+void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
 {
 	bool gettingWet = false;
 
@@ -95,15 +97,13 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, int dtMs, const ModConfig
 
 	float submerged = ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed);
 	if (ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed) > state.wetness.Value()) {
-		//Not setting if in water. Standing up to ankles while soaked would still allow torso to dry down.
+		//Only set if in deepr water than current wetness. Standing up to ankles while soaked would still allow torso to dry down.
 		gettingWet = true;
 	}
 	state.wetness.Set(std::max(state.wetness.Value(), ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed)));
 
-	
 	float rainIntensity = MISC::GET_RAIN_LEVEL();
 	if (rainIntensity > 0) {
-		
 		//Behind an interval as it can do some expensive raycasting to looks for cover
 		if (MISC::GET_GAME_TIMER() >= state.nextCoverProbe) {
 			state.rainExposure = RainExposure(playerPed);
@@ -111,16 +111,44 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, int dtMs, const ModConfig
 		}
 		if (state.rainExposure == 0.0f) {
 			gettingWet = false;
-		} else {
+		}
+		else {
 			state.wetness.Add(rainIntensity * state.fullRainWetPerSecond * state.rainExposure * seconds);
 		}
 	}
 
+	//Sweat accumulation
+	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);
+	float playerTemp = MISC::_GET_TEMPERATURE_AT_COORDS(pos.x, pos.y, pos.z);
 
+	float sweatRoom = cfg.MaxSweatAccumulation - state.wetness.Value();
+	float sweatAccumulation = 0.0f;
+	if (exertion > 0 && sweatRoom > 0) {
+		sweatAccumulation = state.nominalSweatPerSecond * exertion;
+
+		//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
+		if (ATTRIBUTE::GET_ATTRIBUTE_POINTS(playerPed, SA_BODYHEAT) == 100) {
+			sweatAccumulation *= 1.15f;
+		}
+
+		//Sweat faster beyond the nominal temperature
+		float tempModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
+		sweatAccumulation *= tempModifier;
+
+		//Sweat up. Hoes down.
+		state.wetness.Add(std::min(sweatAccumulation * seconds, sweatRoom));
+
+		debug.push_back(std::format("Temp: {:.1f}F, Mod {}", Utils::CelsiusToFahrenheit(playerTemp), tempModifier));
+		debug.push_back(std::format("Sweat accumulation: {}", sweatAccumulation));
+	}
+
+	//TODO: Dry off
 
 	debug.push_back(std::format("Wetness: {}", state.wetness.Value()));
 	debug.push_back(std::format("Submerged Level: {}", submerged));
 	debug.push_back(std::format("Rain: {}", rainIntensity));
 	debug.push_back(std::format("Rain exposure: {}", state.rainExposure));
+	
+	
 }
 

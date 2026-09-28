@@ -45,6 +45,9 @@
     <ClCompile Include="src\elasticinterval.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\exertion.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\script.h">
@@ -102,6 +105,9 @@
       <Filter>sdk</Filter>
     </ClInclude>
     <ClInclude Include="src\elasticinterval.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\exertion.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

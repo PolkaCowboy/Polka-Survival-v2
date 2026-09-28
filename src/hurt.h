@@ -9,12 +9,15 @@
 
 struct HypothermiaEffects;
 
-// All the timers for when to drain a core or hp next
-struct HurtState { 
-	ElasticInterval healthCore;
-	ElasticInterval staminaCore;
-	ElasticInterval hitPoints;
-};
+namespace Hurt {
 
-void HurtInit(HurtState& state, const ModConfig& cfg);
-void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);
+	// All the timers for when to drain a core or hp next
+	struct State {
+		ElasticInterval healthCore;
+		ElasticInterval staminaCore;
+		ElasticInterval hitPoints;
+	};
+
+	void Init(State& state, const ModConfig& cfg);
+	void Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);
+}

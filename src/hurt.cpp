@@ -43,15 +43,17 @@ namespace
 
 }
 
-void HurtInit(HurtState& state, const ModConfig& cfg) {
+void Hurt::Init(State& state, const ModConfig& cfg) {
 	state.healthCore = ElasticInterval(DrainInterval(cfg.HealthCoreDrainsPerDay));
 	state.staminaCore = ElasticInterval(DrainInterval(cfg.StaminaCoreDrainsPerDay));
 	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(cfg.HurtingTimeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
 }
 
-void HurtUpdate(HurtState& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
+void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
 
 	//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
+	//TODO Remove from here and just have it effect sweating?
+	//TODO Make no hat effect something
 	int bodyheat = ATTRIBUTE::GET_ATTRIBUTE_POINTS(playerPed, SA_BODYHEAT);
 
 	//Health Core

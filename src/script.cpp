@@ -7,6 +7,7 @@
 #include "hypothermia.h"
 #include "wetness.h"
 #include "utils.h"
+#include "exertion.h"
 
 
 #include <format>
@@ -23,7 +24,7 @@ namespace
 void ScriptMain()
 {
 	// All the running timers and flags
-	HurtState hurtState;
+	Hurt::State hurtState;
 	HypothermiaState hypothermiaState;
 	WetnessState wetnessState;
 
@@ -32,7 +33,7 @@ void ScriptMain()
 	bool g_showOverlay = true;
 
 	//Set up states
-	HurtInit(hurtState, g_config);
+	Hurt::Init(hurtState, g_config);
 	HypothermiaInit(hypothermiaState, g_config);
 	WetnessInit(wetnessState, g_config);
 
@@ -74,9 +75,10 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
-		WetnessUpdate(wetnessState, playerPed, dtMs, g_config, debugMessages);
+		float exertion = Exertion::GetExertion(playerPed);
+		WetnessUpdate(wetnessState, playerPed, exertion, dtMs, g_config, debugMessages);
 		//HypothermiaUpdate(hypothermiaState, playerPed, wetnessState.wetness.Value(), dtMs, g_config, debugMessages);
-		HurtUpdate(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
+		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
 		
 
 		if (IsKeyJustUp(VK_F19))

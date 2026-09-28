@@ -28,9 +28,22 @@ float Utils::ScaleToRange(float value, int minValue, int maxValue)
 	return (clampedValue - minValue) / (maxValue - minValue);
 }
 
+//Map to ranges. Input a value between inMin and outMax and scale to where it landes between outMin and outMax
+// IE. A temperatue X needs to be converted to a 1.0f - 2.0f modifier based on where that temp lives between 68F - 95F.
+
 int Utils::MapToRange(int value, int inMin, int inMax, int outMin, int outMax)
 {
 	value = std::clamp(value, inMin, inMax);
 	double t = double(value - inMin) / (inMax - inMin);
 	return (int)std::lround(std::lerp(double(outMin), double(outMax), t));
+}
+
+float Utils::MapToRange(float value, float inMin, float inMax, float outMin, float outMax)
+{
+	if (inMax == inMin)
+		return outMin;
+
+	// t is 0 at inMin and 1 at inMax, whichever of the two is larger.
+	float t = std::clamp((value - inMin) / (inMax - inMin), 0.0f, 1.0f);
+	return std::lerp(outMin, outMax, t);
 }

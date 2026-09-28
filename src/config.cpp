@@ -1,9 +1,13 @@
 #include "config.h"
 #include "paths.h"
+#include "utils.h"
 #include "../inc/SimpleIni.h"
 
+#include <cctype>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
+#include <optional>
 
 namespace fs = std::filesystem;
 
@@ -13,6 +17,48 @@ namespace
 	{
 		static const std::string path = (fs::path(ModDataDir()) / "config.ini").string();
 		return path;
+	}
+
+	using Utils::FahrenheitToCelsius;
+	using Utils::CelsiusToFahrenheit;
+
+	// Parses a number followed by F or C, e.g. "75.5F", "30C", "-4 f", and returns it in Celsius.
+	// No unit, or anything else after it, is rejected (nullopt) so a typo falls back to the
+	// default instead of guessing which unit was meant.
+	std::optional<float> ParseTemperatureC(const char* text)
+	{
+		if (!text)
+			return std::nullopt;
+
+		char* end = nullptr;
+		float value = std::strtof(text, &end); // skips leading spaces; end = first char after the number
+		if (end == text)
+			return std::nullopt; // no number at all
+
+		while (std::isspace(static_cast<unsigned char>(*end)))
+			end++;
+		char unit = static_cast<char>(std::toupper(static_cast<unsigned char>(*end)));
+		if (unit != 'F' && unit != 'C')
+			return std::nullopt;
+		end++;
+		while (std::isspace(static_cast<unsigned char>(*end)))
+			end++;
+		if (*end != '\0')
+			return std::nullopt; // trailing junk, e.g. "30CC"
+
+		return unit == 'F' ? FahrenheitToCelsius(value) : value;
+	}
+
+	// Reads a temperature key into `celsius`. Missing or unparseable keeps the current value.
+	float ReadTemperatureC(const CSimpleIniA& ini, const char* section, const char* key, float celsius)
+	{
+		return ParseTemperatureC(ini.GetValue(section, key, nullptr)).value_or(celsius);
+	}
+
+	// Defaults are written out in Fahrenheit; {:g} rounds away float noise (32.2222C -> "90F").
+	std::string FormatFahrenheit(float celsius)
+	{
+		return std::format("{:g}F", CelsiusToFahrenheit(celsius));
 	}
 }
 
@@ -63,13 +109,33 @@ ModConfig LoadConfig()
 
 		ini.SetValue("HYPOTHERMIA", nullptr, nullptr, "; Times are in real world seconds.");
 		ini.SetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
+		ini.SetValue("HYPOTHERMIA", "MAX_SWEAT_ACCUMULATION", std::format("{:g}", cfg.MaxSweatAccumulation).c_str(),
+			";How wet you can get from sweat alone. 0-1: 0.4 = 40% of fully soaked. 0 = no sweating.\n"
+			";Mod default = 0.4");
+		ini.SetValue("HYPOTHERMIA", "NOMINAL_MAX_SWEAT_TIME", std::format("{:g}", cfg.NominalMaxSweatTime).c_str(),
+			";Seconds. How long it takes to reach MAX_SWEAT_ACCUMULATION at full exertion\n"
+			";at the NOMINAL temperature. Too-warm clothing and hot weather speed this up.\n"
+			";Mod default = 60");
 		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", std::format("{:g}", cfg.MinTimeToGetSoaked).c_str(),
-			";How long it takes to get 100% soaked in a full rainstorm.\n"
+			";Seconds. How long it takes to get 100% soaked in a full rainstorm.\n"
 			";Mod default = 30");
 		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", std::format("{:g}", cfg.MinTimeToDry).c_str(),
-			";How long it takes to dry off completely in a warm, dry climate without a heat source.\n"
+			";Seconds. How long it takes to dry off completely in a warm, dry climate without a heat source.\n"
 			";Campfires and other heat sources speed this up; other weather slows it down.\n"
 			";Mod default = 30");
+
+		ini.SetValue("TEMPERATURE", nullptr, nullptr,
+			";Temperature bands. Write each as a number followed by F or C, e.g. 68F or 20C.\n"
+			";Either works in any line; the mod converts to the other.");
+		ini.SetValue("TEMPERATURE", "NOMINAL", FormatFahrenheit(cfg.NominalTemperatureC).c_str(),
+			";Comfortable temperature.\n"
+			";Mod default = 68F");
+		ini.SetValue("TEMPERATURE", "EXTREME", FormatFahrenheit(cfg.ExtremeTemperatureC).c_str(),
+			";Dangerously hot.\n"
+			";Mod default = 89.6F");
+		ini.SetValue("TEMPERATURE", "FREEZING", FormatFahrenheit(cfg.FreezingTemperatureC).c_str(),
+			";Freezing.\n"
+			";Mod default = 32F");
 
 		ini.SaveFile(ConfigPath().c_str(), false); // false = no UTF-8 BOM
 		return cfg;
@@ -97,8 +163,14 @@ ModConfig LoadConfig()
 	cfg.HurtingIsLethal = ini.GetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal);
 
 	cfg.EnableHypothermia = ini.GetBoolValue("HYPOTHERMIA", "ENABLE", cfg.EnableHypothermia);
+	cfg.MaxSweatAccumulation = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MAX_SWEAT_ACCUMULATION", cfg.MaxSweatAccumulation));
+	cfg.NominalMaxSweatTime = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "NOMINAL_MAX_SWEAT_TIME", cfg.NominalMaxSweatTime));
 	cfg.MinTimeToGetSoaked = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", cfg.MinTimeToGetSoaked));
 	cfg.MinTimeToDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", cfg.MinTimeToDry));
+
+	cfg.NominalTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "NOMINAL", cfg.NominalTemperatureC);
+	cfg.ExtremeTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "EXTREME", cfg.ExtremeTemperatureC);
+	cfg.FreezingTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "FREEZING", cfg.FreezingTemperatureC);
 
 	return cfg;
 }
