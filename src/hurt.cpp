@@ -16,18 +16,17 @@ namespace
 	// One in-game day: 48 real world minutes;
 	constexpr int MS_PER_DAY = 48 * 60 * 1000;
 
-	// Initially I had this set up to reduce by 2 because reducing the core HP by 1 sometimes got weird and would heal instead of hurt. Booo
-	// Later figured out it wasn't the 1hp reduction specifically, but landing on certain values that would always bounce back. 
-	// Working around this with GetTrueNewCoreValue();
-	constexpr int CORE_POINTS_PER_TICK = 1;
-	constexpr int TICKS_TO_EMPTY = 100 / CORE_POINTS_PER_TICK;
-
 	// The game's own script keeps a float copy of each core and ~1.5 s after a change writes back
 	// CEIL() of it. Float round-off turns these five values into x.000001, so they come back +1.
-	// The core jump will create a trap where we can't ever drain past them if we keep hitting the same value. 
-	// Solution: drain by 1 more hp when these troublemakers are encountered.
+	// The core jump will create a wall where we can't ever drain past them. 
+	// Solution: Pretend they don't exist and adjust timing to 100 - (Size of this array).
+	constexpr int SKIP_VALUES[] = { 15, 27, 30, 54, 60 };
+
+	constexpr int TICKS_TO_EMPTY = 100 - std::size(SKIP_VALUES);
+
+	
 	int GetSafeCoreDrainValue(int v) {
-		if (v == 15 || v == 27 || v == 30 || v == 54 || v == 60) {
+		if(std::ranges::find(SKIP_VALUES, v) != std::end(SKIP_VALUES)){
 			return v - 1;
 		}
 		return v;
@@ -44,16 +43,14 @@ namespace
 		return static_cast<int>(std::round(static_cast<double>(MS_PER_DAY) / TICKS_TO_EMPTY / drainsPerDay));
 	}
 
-	//limit: How long we can drain to. Set above 0 to keep health drain non-lethal.
+	//limit: How low we can drain to. Set above 0 to keep health drain non-lethal.
 	void DrainCore(Ped ped, int core, int drains, int limit = 0)
 	{
 		if (drains <= 0)
 			return;
 		int value = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, core);
-		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains * CORE_POINTS_PER_TICK)));
+		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains)));
 	}
-
-
 
 }
 
