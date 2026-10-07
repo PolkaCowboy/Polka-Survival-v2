@@ -48,9 +48,9 @@ struct ModConfig
 	//Hypothermia
 	bool EnableHypothermia = true;
 	float MaxSweatAccumulation = 0.4f; //0-1 range. What percentage of max soak you can get purely by sweating.
-	float NominalMaxSweatTime = 60.0f; //Seconds. How long to achieve MaxSweatAccumulation at max exertion at NominalTemperatureC. Too warm clothing and hot weather will accelerate.
+	float NominalMaxSweatTime = 180.0f; //Seconds. How long to achieve MaxSweatAccumulation at max exertion at NominalTemperatureC. Too warm clothing and hot weather will accelerate.
 	float MinTimeToGetSoaked = 30.0f; //Seconds. Time to get 100% soaked in a full rainstorm.
-	float MinTimeToDry = 30.0f; //Seconds. Time to completely dry without a heat source in a dry hot climate. Campfires/heatsources will accelerate this. Other weather factors will slow this.
+	float MinTimeToDry = 240.0f; //Seconds. Time to completely dry without a heat source in a dry hot climate. Campfires/heatsources will accelerate this. Other weather factors will slow this.
 
 	//Temperature. Celsius. The .ini accepts F or C and converts.
 	float NominalTemperatureC = 20.0f; //68F

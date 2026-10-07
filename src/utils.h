@@ -1,6 +1,8 @@
 #pragma once
+#include "../inc/sdk.h"
 
 #include <string>
+#include <cmath>
 
 namespace Utils
 {
@@ -17,4 +19,9 @@ namespace Utils
 	// The game works in Celsius; these are for config and display.
 	inline float FahrenheitToCelsius(float f) { return (f - 32.0f) * 5.0f / 9.0f; }
 	inline float CelsiusToFahrenheit(float c) { return c * 9.0f / 5.0f + 32.0f; }
+	inline float Distance(const Vector3& a, const Vector3& b)
+	{
+		float dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+		return std::sqrt(dx * dx + dy * dy + dz * dz);
+	}
 }

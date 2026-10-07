@@ -47,3 +47,4 @@ float Utils::MapToRange(float value, float inMin, float inMax, float outMin, flo
 	float t = std::clamp((value - inMin) / (inMax - inMin), 0.0f, 1.0f);
 	return std::lerp(outMin, outMax, t);
 }
+
