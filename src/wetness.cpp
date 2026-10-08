@@ -7,6 +7,7 @@
 
 namespace
 {
+
 	// Wetness per second to go from 0.0 to 1.0 in `seconds`. 0 (or less) = never changes.
 	float RatePerSecond(float seconds)
 	{
@@ -31,8 +32,12 @@ namespace
 	const float HEAT_FULL_RADIUS = 3.0f;
 	//Fire drying fades out between HEAT_FULL_RADIUS and this distance.
 	const float HEAT_FADE_RADIUS = 6.0f;
-	//How much faster than normal a fire dries you at full strength.
+	
+	// Max dry down rate when next to a heat source. 
 	const float MAX_HEAT_DRY_FACTOR = 4.0f;
+	// How much rain a fire blocks when you're within HEAT_FULL_RADIUS. 1 = all of it, 0 = none.
+	const float FIRE_RAIN_PROTECTION = 1.0f;
+
 
 	struct ProbeResult
 	{
@@ -100,16 +105,30 @@ void WetnessInit(WetnessState& state, const ModConfig& cfg)
 
 void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
 {
-	bool gettingWet = false;
-
 	float seconds = dtMs / 1000.0f;
+	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);
+	float playerTemp = MISC::_GET_TEMPERATURE_AT_COORDS(pos.x, pos.y, pos.z);
+	float effectiveTemp = playerTemp;
 
-	float submergedLevel = ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed);
-	if (submergedLevel > state.wetness.Value()) {
-		//Only set if in deepr water than current wetness. Standing up to ankles while soaked would still allow torso to dry down.
-		gettingWet = true;
+	//If we are near a fire or heat source increase the effective temp used in dry calculations to accelerate drying.
+	float fireWeight = 0.0f;
+	Vector3 firePos{};
+	if (FIRE::GET_CLOSEST_FIRE_POS(&firePos, pos.x, pos.y, pos.z)) {
+		float fireDistance = Utils::Distance(firePos, pos);
+		float fireTemp = MISC::_GET_TEMPERATURE_AT_COORDS(firePos.x, firePos.y, firePos.z);
+		fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
+		effectiveTemp = std::lerp(playerTemp, fireTemp, fireWeight);
 	}
-	state.wetness.Set(std::max(state.wetness.Value(), submergedLevel));
+	
+	//Establish drydown floors. 
+	float submergedLevel = ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed);
+	float sweatTarget = exertion * cfg.MaxSweatAccumulation;
+	float wetFloor = std::max(submergedLevel, sweatTarget);
+
+	//Ooops. We fell into water.
+	if (submergedLevel > state.wetness.Value()) {
+		state.wetness.Set(submergedLevel);
+	}
 
 	float rainIntensity = MISC::GET_RAIN_LEVEL();
 	if (rainIntensity > 0) {
@@ -118,22 +137,16 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 			state.rainExposure = RainExposure(playerPed);
 			state.nextCoverProbe = MISC::GET_GAME_TIMER() + COVER_PROBE_INTERVAL_MS;
 		}
-		if (state.rainExposure > 0.0f) {
-			state.wetness.Add(rainIntensity * state.fullRainWetPerSecond * state.rainExposure * seconds);
-			gettingWet = true;
-		}
+
+		float rainRate = rainIntensity * state.fullRainWetPerSecond * state.rainExposure;
+		rainRate *= 1.0f - fireWeight * FIRE_RAIN_PROTECTION;
+		state.wetness.Add(rainRate * seconds);
 	}
 
-	//Sweat accumulation
-	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);
-	float playerTemp = MISC::_GET_TEMPERATURE_AT_COORDS(pos.x, pos.y, pos.z);
 
-	// Sweat pulls wetness up towards a target set by how hard the player is working. Drying below
-	// uses the same target as a floor, so working keeps clothes damp and stopping lets them dry.
-	float sweatTarget = std::clamp(exertion, 0.0f, 1.0f) * cfg.MaxSweatAccumulation;
-	float sweatRoom = sweatTarget - state.wetness.Value();
+	//Exertion: Climb towards the sweat target.
 	float sweatAccumulation = 0.0f;
-	if (sweatRoom > 0) {
+	if (sweatTarget > state.wetness.Value()) {
 		sweatAccumulation = state.nominalSweatPerSecond * exertion;
 
 		//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
@@ -141,68 +154,57 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 			sweatAccumulation *= 1.15f;
 		}
 
-		//Sweat faster beyond the nominal temperature
+		//Sweat faster when above the nominal temperature
 		float tempModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
 		sweatAccumulation *= tempModifier;
 
 		//Sweat up. Hoes down.
-		state.wetness.Add(std::min(sweatAccumulation * seconds, sweatRoom));
+		state.wetness.Add(std::min(sweatAccumulation * seconds, sweatTarget - state.wetness.Value()));
 
 		debug.push_back(std::format("Temp: {:.1f}F, Mod {}", Utils::CelsiusToFahrenheit(playerTemp), tempModifier));
 		debug.push_back(std::format("Sweat accumulation: {}", sweatAccumulation));
 	}
 
 
-	//If we are near a fire or heat source blend its heat a little further out than the game does naturally to accelerate drying.
-	float fireDry = 0.0f;
-	Vector3 firePos{};
-	if (FIRE::GET_CLOSEST_FIRE_POS(&firePos, pos.x, pos.y, pos.z)) {
-		float fireDistance = Utils::Distance(firePos, pos);
-		float fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
-		fireDry = (MAX_HEAT_DRY_FACTOR - 1.0f) * fireWeight;
-		gettingWet = false;
-	}
-
 	//Let's dry!
-	if (!gettingWet) {
 
-		//0.0f - 1.0f dry time
-		float dryDownModifier = 0.0f;
+	float dryDown = 0.0f;
 
-		//approach 0 as the temp approaches freezing
-		if (playerTemp > cfg.FreezingTemperatureC && playerTemp <= cfg.NominalTemperatureC) {
-			dryDownModifier = Utils::MapToRange(playerTemp, cfg.FreezingTemperatureC, cfg.NominalTemperatureC, 0.0f, 1.0f);
-		}
-		//Increase drydown as the temp gets hotter
-		else if (playerTemp > cfg.NominalTemperatureC) {
-			dryDownModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
-		}
-
-		// Always allow drying drying down to .8, accelerating it a little. (Simulate shaking off, skin evaptoarting faster or something)
-		if (state.wetness.Value() > 0.8f) {
-			dryDownModifier += 0.5f;
-		}
-
-		//Dry slower in wet environment.
-		dryDownModifier *= std::lerp(1.0f, 0.2f, PED::_GET_PED_BLACKBOARD_FLOAT(playerPed, "Soak"));
-
-		debug.push_back(std::format("DryDownModifier: {:.3f}, cfg {}", dryDownModifier, cfg.MinTimeToDry));
-		debug.push_back(std::format("Fire dry: {:.3f}", fireDry));
-
-		float wetToRemoveThisTick = (fireDry + dryDownModifier) * state.nominalDrydownPerSecond * seconds;
-
-		// Don't dry below the sweat target. min() so the floor itself never adds wetness.
-		float floor = std::min(sweatTarget, state.wetness.Value());
-		state.wetness.Set(std::max(state.wetness.Value() - wetToRemoveThisTick, floor));
-		
+	//approach 0 as the temp approaches freezing
+	if (effectiveTemp > cfg.FreezingTemperatureC && effectiveTemp <= cfg.NominalTemperatureC) {
+		dryDown = Utils::MapToRange(effectiveTemp, cfg.FreezingTemperatureC, cfg.NominalTemperatureC, 0.0f, 1.0f);
 	}
-	
+	//Increase drydown as the temp gets hotter
+	else if (effectiveTemp > cfg.NominalTemperatureC) {
+		dryDown = Utils::MapToRange(effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, fireWeight));
+	}
 
+	// Always allow drying drying down to .8, accelerating it a little. (Simulate shaking off, skin evaptoarting faster or something)
+	if (state.wetness.Value() > 0.8f) {
+		dryDown += 0.5f;
+	}
+
+	//Dry slower in wet environment.
+	float soakPenalty = std::lerp(1.0f, 0.2f, PED::_GET_PED_BLACKBOARD_FLOAT(playerPed, "Soak"));
+
+	//A heat source will overpower the soaked environment penalty.
+	soakPenalty = std::lerp(soakPenalty, 1.0f, fireWeight); 
+	
+	dryDown *= soakPenalty;
+
+	float wetToRemoveThisTick = dryDown * state.nominalDrydownPerSecond * seconds;
+
+	// Don't dry below the sweat target or submerged level.
+	float floor = std::min(wetFloor, state.wetness.Value());
+	state.wetness.Set(std::max(state.wetness.Value() - wetToRemoveThisTick, floor));
+
+
+	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(effectiveTemp), fireWeight));
+	debug.push_back(std::format("DryDownModifier: {:.3f}, cfg {}", dryDown, cfg.MinTimeToDry));
 	debug.push_back(std::format("Wetness: {:.3f}  sweat target {:.3f} (exertion {:.2f})", state.wetness.Value(), sweatTarget, exertion));
 	debug.push_back(std::format("Submerged Level: {}", submergedLevel));
-	debug.push_back(std::format("Rain: {}", rainIntensity));
+	debug.push_back(std::format("Rain: {}, Snow {}", rainIntensity, MISC::GET_SNOW_LEVEL()));
 	debug.push_back(std::format("Rain exposure: {}", state.rainExposure));
-	
-	
+
 }
 
