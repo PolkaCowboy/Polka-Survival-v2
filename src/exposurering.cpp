@@ -20,6 +20,9 @@ namespace
 	const UI::Rgba ICE_BLUE{ 120, 190, 255, 255 };
 	// The cold icon while there's no hypothermia: a dim placeholder.
 	const UI::Rgba ICON_IDLE_GREY{ 70, 70, 70, 255 };
+	// Hot color to the icon to go to when near a warming point.
+	const UI::Rgba FIRE_ORANGE{ 255, 119, 0, 255 };
+	
 
 	// Swith to the expanded view layout for about 3 s of real time when the HUD is up.
 	constexpr Hash INPUT_REVEAL_HUD = 0xCF8A4ECA;
@@ -69,7 +72,7 @@ void ExposureRing::Init(State& state)
 	state.trackColor = UI::HudColor("COLOR_METER_TRACK_DEFAULT");
 }
 
-void ExposureRing::Update(State& state, float wetness, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg)
+void ExposureRing::Update(State& state, float wetness, float fireWeight, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg)
 {
 	int realNow = MISC::GET_SYSTEM_TIME();
 	if (RevealPressed())
@@ -127,6 +130,9 @@ void ExposureRing::Update(State& state, float wetness, float severity, bool losi
 			float wave = 0.5f + 0.5f * std::sin(now / 1000.0f * PULSES_PER_SECOND * 2.0f * std::numbers::pi_v<float>);
 			iconAlpha *= 0.35f + 0.65f * wave;
 		}
+	}
+	else if (fireWeight > 0) {
+		iconColor = Lerp(ICON_IDLE_GREY, FIRE_ORANGE, std::clamp(fireWeight, 0.0f, 1.0f));
 	}
 	ring.iconDict = "rpg_textures";
 	ring.iconName = "rpg_cold";

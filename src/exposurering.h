@@ -21,5 +21,5 @@ namespace ExposureRing
 	void Init(State& state);
 
 	// wetness and severity are 0-1. now is GET_GAME_TIMER, for the pulse.
-	void Update(State& state, float wetness, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg);
+	void Update(State& state, float wetness, float fireWeight, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg);
 }

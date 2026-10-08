@@ -29,6 +29,7 @@ struct WetnessState
 	float nominalDrydownPerSecond = 0.0f;
 	float nominalSweatPerSecond = 0.0f;
 	float rainExposure = 0.0f;
+	float fireWeight = 0.0f;
 
 	int nextCoverProbe = 0;
 };

@@ -111,13 +111,13 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	float effectiveTemp = playerTemp;
 
 	//If we are near a fire or heat source increase the effective temp used in dry calculations to accelerate drying.
-	float fireWeight = 0.0f;
+	state.fireWeight = 0.0f;
 	Vector3 firePos{};
 	if (FIRE::GET_CLOSEST_FIRE_POS(&firePos, pos.x, pos.y, pos.z)) {
 		float fireDistance = Utils::Distance(firePos, pos);
 		float fireTemp = MISC::_GET_TEMPERATURE_AT_COORDS(firePos.x, firePos.y, firePos.z);
-		fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
-		effectiveTemp = std::lerp(playerTemp, fireTemp, fireWeight);
+		state.fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
+		effectiveTemp = std::lerp(playerTemp, fireTemp, state.fireWeight);
 	}
 	
 	//Establish drydown floors. 
@@ -139,7 +139,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 		}
 
 		float rainRate = rainIntensity * state.fullRainWetPerSecond * state.rainExposure;
-		rainRate *= 1.0f - fireWeight * FIRE_RAIN_PROTECTION;
+		rainRate *= 1.0f - state.fireWeight * FIRE_RAIN_PROTECTION;
 		state.wetness.Add(rainRate * seconds);
 	}
 
@@ -176,7 +176,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	}
 	//Increase drydown as the temp gets hotter
 	else if (effectiveTemp > cfg.NominalTemperatureC) {
-		dryDown = Utils::MapToRange(effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, fireWeight));
+		dryDown = Utils::MapToRange(effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, state.fireWeight));
 	}
 
 	// Always allow drying drying down to .8, accelerating it a little. (Simulate shaking off, skin evaptoarting faster or something)
@@ -188,7 +188,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	float soakPenalty = std::lerp(1.0f, 0.2f, PED::_GET_PED_BLACKBOARD_FLOAT(playerPed, "Soak"));
 
 	//A heat source will overpower the soaked environment penalty.
-	soakPenalty = std::lerp(soakPenalty, 1.0f, fireWeight); 
+	soakPenalty = std::lerp(soakPenalty, 1.0f, state.fireWeight); 
 	
 	dryDown *= soakPenalty;
 
@@ -199,7 +199,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	state.wetness.Set(std::max(state.wetness.Value() - wetToRemoveThisTick, floor));
 
 
-	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(effectiveTemp), fireWeight));
+	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(effectiveTemp), state.fireWeight));
 	debug.push_back(std::format("DryDownModifier: {:.3f}, cfg {}", dryDown, cfg.MinTimeToDry));
 	debug.push_back(std::format("Wetness: {:.3f}  sweat target {:.3f} (exertion {:.2f})", state.wetness.Value(), sweatTarget, exertion));
 	debug.push_back(std::format("Submerged Level: {}", submergedLevel));
