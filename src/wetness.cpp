@@ -38,6 +38,22 @@ namespace
 	// How much rain a fire blocks when you're within HEAT_FULL_RADIUS. 1 = all of it, 0 = none.
 	const float FIRE_RAIN_PROTECTION = 1.0f;
 
+	const char* const FIRE_REST_SCENARIOS[] = {
+	"WORLD_PLAYER_CAMP_FIRE_KNEEL1", "WORLD_PLAYER_CAMP_FIRE_KNEEL2", "WORLD_PLAYER_CAMP_FIRE_KNEEL3", "WORLD_PLAYER_CAMP_FIRE_KNEEL4",
+	"WORLD_PLAYER_CAMP_FIRE_SIT", "WORLD_PLAYER_CAMP_FIRE_SIT_MALE_A", "WORLD_PLAYER_CAMP_FIRE_SQUAT", "WORLD_PLAYER_CAMP_FIRE_SQUAT_MALE_A",
+	"WORLD_PLAYER_DYNAMIC_CAMP_FIRE_KNEEL_ARTHUR", "WORLD_PLAYER_DYNAMIC_KNEEL_KNIFE", "PROP_PLAYER_SLEEP_TENT_A_FRAME" };
+
+	bool IsRestingAtFire(Ped ped)
+	{
+		if (!PED::IS_PED_USING_ANY_SCENARIO(ped))
+			return false;
+		for (const char* scenario : FIRE_REST_SCENARIOS)
+		{
+			if (PED::IS_PED_USING_SCENARIO_HASH(ped, MISC::GET_HASH_KEY(scenario)))
+				return true;
+		}
+		return false;
+	}
 
 	struct ProbeResult
 	{
@@ -70,7 +86,7 @@ namespace
 	//Raw rain intensity is a global weather state and not local to player. We need to determine if player is in cover before accumulating wet
 	float RainExposure(Ped playerPed) {
 
-		if (INTERIOR::IS_INTERIOR_SCENE()) {
+		if (INTERIOR::IS_INTERIOR_SCENE() || PED::IS_PED_USING_SCENARIO_HASH(playerPed, MISC::GET_HASH_KEY("PROP_PLAYER_SLEEP_TENT_A_FRAME"))) {
 			return 0.0f;
 		}
 
@@ -117,7 +133,15 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 		float fireDistance = Utils::Distance(firePos, pos);
 		float fireTemp = MISC::_GET_TEMPERATURE_AT_COORDS(firePos.x, firePos.y, firePos.z);
 		state.fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
+		// Camp bonus.
+		if (IsRestingAtFire(playerPed)) {
+			state.fireWeight += 1.5f;
+		}
+
 		effectiveTemp = std::lerp(playerTemp, fireTemp, state.fireWeight);
+
+
+
 	}
 	
 	//Establish drydown floors. 

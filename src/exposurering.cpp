@@ -1,5 +1,6 @@
 #include "exposurering.h"
 #include "../inc/sdk.h"
+#include "utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -132,7 +133,7 @@ void ExposureRing::Update(State& state, float wetness, float fireWeight, float s
 		}
 	}
 	else if (fireWeight > 0) {
-		iconColor = Lerp(ICON_IDLE_GREY, FIRE_ORANGE, std::clamp(fireWeight, 0.0f, 1.0f));
+		iconColor = Lerp(ICON_IDLE_GREY, FIRE_ORANGE, Utils::MapToRange(fireWeight, 0.0f, 2.0f, 0.0f, 1.0f)); //2.0f is half of MAX_HEAT_DRY_FACTOR in wetness.cpp to make flow glow happen before full potential glow. TODO: Move to config
 	}
 	ring.iconDict = "rpg_textures";
 	ring.iconName = "rpg_cold";
