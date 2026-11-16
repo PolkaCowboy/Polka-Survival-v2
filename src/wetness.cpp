@@ -32,26 +32,34 @@ namespace
 	const float HEAT_FULL_RADIUS = 3.0f;
 	//Fire drying fades out between HEAT_FULL_RADIUS and this distance.
 	const float HEAT_FADE_RADIUS = 6.0f;
-	
+
 	// Max dry down rate when next to a heat source. 
 	const float MAX_HEAT_DRY_FACTOR = 4.0f;
 	// How much rain a fire blocks when you're within HEAT_FULL_RADIUS. 1 = all of it, 0 = none.
 	const float FIRE_RAIN_PROTECTION = 1.0f;
+
+	//Resting at fire effects
+
+	// Resting near a fire increases drying rate. (Time saving shit) 
+	const float REST_DRYDOWN_BOOST = 4.0f;
 
 	const char* const FIRE_REST_SCENARIOS[] = {
 	"WORLD_PLAYER_CAMP_FIRE_KNEEL1", "WORLD_PLAYER_CAMP_FIRE_KNEEL2", "WORLD_PLAYER_CAMP_FIRE_KNEEL3", "WORLD_PLAYER_CAMP_FIRE_KNEEL4",
 	"WORLD_PLAYER_CAMP_FIRE_SIT", "WORLD_PLAYER_CAMP_FIRE_SIT_MALE_A", "WORLD_PLAYER_CAMP_FIRE_SQUAT", "WORLD_PLAYER_CAMP_FIRE_SQUAT_MALE_A",
 	"WORLD_PLAYER_DYNAMIC_CAMP_FIRE_KNEEL_ARTHUR", "WORLD_PLAYER_DYNAMIC_KNEEL_KNIFE", "PROP_PLAYER_SLEEP_TENT_A_FRAME" };
 
-	bool IsRestingAtFire(Ped ped)
+	bool IsRestingAtFire(Ped ped, float currentFireWeight)
 	{
-		if (!PED::IS_PED_USING_ANY_SCENARIO(ped))
+		if (currentFireWeight <= 0.0f || !PED::IS_PED_USING_ANY_SCENARIO(ped)) {
 			return false;
+		}
+
 		for (const char* scenario : FIRE_REST_SCENARIOS)
 		{
 			if (PED::IS_PED_USING_SCENARIO_HASH(ped, MISC::GET_HASH_KEY(scenario)))
 				return true;
 		}
+
 		return false;
 	}
 
@@ -130,20 +138,13 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	state.fireWeight = 0.0f;
 	Vector3 firePos{};
 	if (FIRE::GET_CLOSEST_FIRE_POS(&firePos, pos.x, pos.y, pos.z)) {
-		float fireDistance = Utils::Distance(firePos, pos);
+		float closestFireDistance = Utils::Distance(firePos, pos);
 		float fireTemp = MISC::_GET_TEMPERATURE_AT_COORDS(firePos.x, firePos.y, firePos.z);
-		state.fireWeight = Utils::MapToRange(fireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
-		// Camp bonus.
-		if (IsRestingAtFire(playerPed)) {
-			state.fireWeight += 1.5f;
-		}
+		state.fireWeight = Utils::MapToRange(closestFireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
 
 		effectiveTemp = std::lerp(playerTemp, fireTemp, state.fireWeight);
-
-
-
 	}
-	
+
 	//Establish drydown floors. 
 	float submergedLevel = ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed);
 	float sweatTarget = exertion * cfg.MaxSweatAccumulation;
@@ -212,9 +213,13 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	float soakPenalty = std::lerp(1.0f, 0.2f, PED::_GET_PED_BLACKBOARD_FLOAT(playerPed, "Soak"));
 
 	//A heat source will overpower the soaked environment penalty.
-	soakPenalty = std::lerp(soakPenalty, 1.0f, state.fireWeight); 
-	
+	soakPenalty = std::lerp(soakPenalty, 1.0f, state.fireWeight);
+
 	dryDown *= soakPenalty;
+
+	if (IsRestingAtFire(playerPed, state.fireWeight)) {
+		dryDown *= REST_DRYDOWN_BOOST;
+	}
 
 	float wetToRemoveThisTick = dryDown * state.nominalDrydownPerSecond * seconds;
 
