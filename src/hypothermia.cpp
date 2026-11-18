@@ -9,7 +9,7 @@
 namespace
 {
 	// Being wet bad. Max multiplier at full wet
-	const float WET_MULT = 3.0f;
+	const float WET_MULT = 6.0f;
 
 	// Wind make chilly
 	// Note: Wind value is 0-100, but hurricane seems to max out around 40.
@@ -53,8 +53,11 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 {
 	state.effects = HypothermiaEffects{};
 
-	if (!cfg.EnableHypothermia)
+	if (!cfg.EnableHypothermia) {
+		debug.push_back("HYPOTHERMIA off");
+		debug.push_back("");
 		return;
+	}
 
 	float seconds = dtMs / 1000.0f;
 
@@ -68,8 +71,9 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 
 	float target = std::clamp(coldness * wetChill * windChill * clothing, 0.0f, 1.0f);
 
+	bool gettingColder = state.severity < target;
 	float step = 0.0f;
-	if (state.severity < target) {
+	if (gettingColder) {
 		step = seconds / cfg.TimeToHypothermiaMin;
 	}
 	else {
@@ -83,9 +87,9 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.0f, MAX_HP_DRAIN_MODIFIER);
 	}
 
-	debug.push_back(std::format("Hypothermia: cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f}) x clothes {:.2f} = target {:.2f}  severity {:.3f}",
-		coldness, wetChill, windChill, windSpeed, clothing, target, state.severity));
-	debug.push_back(std::format("Hypothermia effects: stamina {:+.2f}  HP {:+.2f}",
-		state.effects.staminaCoreDrainModifier, state.effects.hitPointsDrainModifier));
-
+	debug.push_back("HYPOTHERMIA");
+	debug.push_back(std::format("severity {:.3f} -> target {:.2f}  ({})", state.severity, target, gettingColder ? "getting colder" : "warming up"));
+	debug.push_back(std::format("cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f}) x clothes {:.2f}", coldness, wetChill, windChill, windSpeed, clothing));
+	debug.push_back(std::format("effects  stamina drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.hitPointsDrainModifier));
+	debug.push_back("");
 }

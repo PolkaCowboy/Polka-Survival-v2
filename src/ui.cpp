@@ -4,6 +4,23 @@
 #include <algorithm>
 #include <format>
 
+namespace
+{
+	// Drop shadow under debug text, so it stays readable on bright backgrounds like snow.
+	constexpr float DEBUG_SHADOW_OFFSET_PX = 1.0f;
+	const UI::Rgba DEBUG_SHADOW_COLOR{ 0, 0, 0, 220 };
+	const UI::Rgba DEBUG_TEXT_COLOR{ 245, 245, 245, 255 };
+
+	void DrawDebugTextOnce(const char* text, float pixelX, float pixelY, float scale, const UI::Rgba& color)
+	{
+		UIDEBUG::_BG_SET_TEXT_SCALE(scale, scale);
+		UIDEBUG::_BG_SET_TEXT_COLOR(color.r, color.g, color.b, color.a);
+
+		const char* varString = MISC::VAR_STRING(10, (char*)"LITERAL_STRING", (char*)text);
+		UIDEBUG::_BG_DISPLAY_TEXT(varString, pixelX / 1920.0f, pixelY / 1080.0f);
+	}
+}
+
 void UI::DisplaySubtitle(const char* text)
 {
 	UILOG::_UILOG_SET_CACHED_OBJECTIVE(text);
@@ -14,20 +31,20 @@ void UI::DisplaySubtitle(const char* text)
 
 void UI::DrawAllDebug(const std::vector<std::string>& debugMessages)
 {
+	// An empty message leaves a blank row, to separate sections.
 	int row = 0;
-	for (const std::string& message : debugMessages){
-		UI::DrawDebugText(message.c_str(), 60.0f, 300.0f + row * 21.0f, 0.28f);
+	for (const std::string& message : debugMessages) {
+		if (!message.empty())
+			UI::DrawDebugText(message.c_str(), 60.0f, 300.0f + row * 21.0f, 0.28f);
 		row++;
 	}
 }
 
 void UI::DrawDebugText(const char* text, float pixelX, float pixelY, float scale)
 {
-	UIDEBUG::_BG_SET_TEXT_SCALE(scale, scale);
-	UIDEBUG::_BG_SET_TEXT_COLOR(245, 245, 245, 255);
-
-	const char* varString = MISC::VAR_STRING(10, (char*)"LITERAL_STRING", (char*)text);
-	UIDEBUG::_BG_DISPLAY_TEXT(varString, pixelX / 1920.0f, pixelY / 1080.0f);
+	// There's no text shadow native, so draw the text in black slightly offset first, then on top.
+	DrawDebugTextOnce(text, pixelX + DEBUG_SHADOW_OFFSET_PX, pixelY + DEBUG_SHADOW_OFFSET_PX, scale, DEBUG_SHADOW_COLOR);
+	DrawDebugTextOnce(text, pixelX, pixelY, scale, DEBUG_TEXT_COLOR);
 }
 
 void UI::DrawDebugText(const char* text) {

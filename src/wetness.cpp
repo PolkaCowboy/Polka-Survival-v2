@@ -171,6 +171,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 
 	//Exertion: Climb towards the sweat target.
 	float sweatAccumulation = 0.0f;
+	float tempModifier = 1.0f;
 	if (sweatTarget > state.wetness.Value()) {
 		sweatAccumulation = state.nominalSweatPerSecond * exertion;
 
@@ -180,14 +181,11 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 		}
 
 		//Sweat faster when above the nominal temperature
-		float tempModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
+		tempModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
 		sweatAccumulation *= tempModifier;
 
 		//Sweat up. Hoes down.
 		state.wetness.Add(std::min(sweatAccumulation * seconds, sweatTarget - state.wetness.Value()));
-
-		debug.push_back(std::format("Temp: {:.1f}F, Mod {}", Utils::CelsiusToFahrenheit(playerTemp), tempModifier));
-		debug.push_back(std::format("Sweat accumulation: {}", sweatAccumulation));
 	}
 
 
@@ -228,12 +226,16 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	state.wetness.Set(std::max(state.wetness.Value() - wetToRemoveThisTick, floor));
 
 
-	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(state.effectiveTemp), state.fireWeight));
-	debug.push_back(std::format("DryDownModifier: {:.3f}, cfg {}", dryDown, cfg.MinTimeToDry));
-	debug.push_back(std::format("Wetness: {:.3f}  sweat target {:.3f} (exertion {:.2f})", state.wetness.Value(), sweatTarget, exertion));
-	debug.push_back(std::format("Submerged Level: {}", submergedLevel));
-	debug.push_back(std::format("Rain: {}, Snow {}", rainIntensity, MISC::GET_SNOW_LEVEL()));
-	debug.push_back(std::format("Rain exposure: {}", state.rainExposure));
+	// Exposure is only re-probed while it rains, so it's stale otherwise.
+	std::string exposure = rainIntensity > 0 ? std::format("{:.2f}", state.rainExposure) : std::string("-");
 
+	debug.push_back("WETNESS");
+	debug.push_back(std::format("wetness {:.3f}  floor {:.2f} (sweat {:.2f}, water {:.2f})  exertion {:.2f}",
+		state.wetness.Value(), wetFloor, sweatTarget, submergedLevel, exertion));
+	debug.push_back(std::format("temp {:.1f}F  effective {:.1f}F  fire weight {:.2f}{}",
+		Utils::CelsiusToFahrenheit(playerTemp), Utils::CelsiusToFahrenheit(state.effectiveTemp), state.fireWeight, state.restingAtFire ? "  (resting)" : ""));
+	debug.push_back(std::format("rain {:.2f}  exposure {}  snow {:.2f}", rainIntensity, exposure, MISC::GET_SNOW_LEVEL()));
+	debug.push_back(std::format("sweating {:.4f}/s (heat x{:.2f})  drying x{:.2f}", sweatAccumulation, tempModifier, dryDown));
+	debug.push_back("");
 }
 

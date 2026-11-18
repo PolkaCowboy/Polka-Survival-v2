@@ -52,6 +52,14 @@ namespace
 		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains)));
 	}
 
+	std::string NextTick(const ElasticInterval& interval, double rate)
+	{
+		int ms = interval.RemainingMs(rate);
+		if (ms < 0)
+			return "off";
+		return std::format("x{:.2f} in {}", rate, Utils::FormatDuration(ms));
+	}
+
 }
 
 void Hurt::Init(State& state, const ModConfig& cfg) {
@@ -82,8 +90,6 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);
 	DrainCore(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
 
-	debug.push_back(std::format("Next Drain In: H({}):{} S({}):{}", healthCoreRate, Utils::FormatDuration(state.healthCore.RemainingMs(healthCoreRate)), staminaCoreRate, Utils::FormatDuration(state.staminaCore.RemainingMs(staminaCoreRate))));
-
 	// Scale hurting rate with a red health core
 	int playerHealthCoreValue = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 
@@ -112,9 +118,13 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 	int numHpDrains = state.hitPoints.Update(dtMs, hitpointsRate);
 
-	debug.push_back(std::format("Next HP Drain In ({}) {}", hitpointsRate, Utils::FormatDuration(state.hitPoints.RemainingMs(hitpointsRate))));
-	debug.push_back(std::format("Player HP {}/{}", ENTITY::GET_ENTITY_HEALTH(playerPed), ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)));
-	debug.push_back(std::format("Healing rate {}>={} = {}", cfg.HealingThreshold, playerHealthCoreValue, healingRate));
+	debug.push_back("CORES");
+	debug.push_back(std::format("health {}  stamina {}  dead eye {}", playerHealthCoreValue,
+		ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA), ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_DEADEYE)));
+	debug.push_back(std::format("next drain  health: {}  stamina: {}", NextTick(state.healthCore, healthCoreRate), NextTick(state.staminaCore, staminaCoreRate)));
+	debug.push_back(std::format("HP {}/{}  next HP drain: {}", ENTITY::GET_ENTITY_HEALTH(playerPed), ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE), NextTick(state.hitPoints, hitpointsRate)));
+	debug.push_back(std::format("healing x{:.2f}  (heals at health core {} or above)", healingRate, cfg.HealingThreshold));
+	debug.push_back("");
 
 
 	//Ding hit points. We only do this beyond the hurting threshold
