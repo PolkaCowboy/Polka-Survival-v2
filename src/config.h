@@ -47,7 +47,8 @@ struct ModConfig
 
 	//Hypothermia
 	bool EnableHypothermia = true;
-	float TimeToHypothermiaMin = 30.0f; // Time to make Hypthermia is teh worst conditions. (Soaked, below freezing)
+	float TimeToHypothermiaDry = 400.0f; // Seconds. How long to achieve full hyptermia effects when dry.
+	float TimeToHypothermiaWet = 7.0f; // Seconds. How long to achieve full hyptermia when soaked.
 	float HypothermiaRecoverNominal = 60.0f; //Time to recover when warm, without a fire bonus.
 	float MaxSweatAccumulation = 0.4f; //0-1 range. What percentage of max soak you can get purely by sweating.
 	float NominalMaxSweatTime = 180.0f; //Seconds. How long to achieve MaxSweatAccumulation at max exertion at NominalTemperatureC. Too warm clothing and hot weather will accelerate.

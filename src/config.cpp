@@ -175,10 +175,13 @@ ModConfig LoadConfig()
 			";Seconds. How long it takes to dry off completely in a warm, dry climate without a heat source.\n"
 			";Campfires and other heat sources speed this up; other weather slows it down.\n"
 			";Mod default = 240");
-		ini.SetValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_MIN", std::format("{:g}", cfg.TimeToHypothermiaMin).c_str(),
-			";Seconds. How long it takes to become fully hypothermic in the worst conditions: soaked and below freezing.\n"
-			";Milder conditions build up to a lower level instead.\n"
-			";Mod default = 30");
+		ini.SetValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_DRY", std::format("{:g}", cfg.TimeToHypothermiaDry).c_str(),
+			";Seconds. How long it takes to become fully hypothermic when dry, at freezing or colder.\n"
+			";Milder cold is slower and builds up to a lower level instead.\n"
+			";Mod default = 300");
+		ini.SetValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_WET", std::format("{:g}", cfg.TimeToHypothermiaWet).c_str(),
+			";Seconds. The same, but soaked. Being partly wet sits in between, closer to the dry time.\n"
+			";Mod default = 20");
 		ini.SetValue("HYPOTHERMIA", "RECOVER_NOMINAL", std::format("{:g}", cfg.HypothermiaRecoverNominal).c_str(),
 			";Seconds. How long it takes to recover from full hypothermia somewhere warm, without a fire.\n"
 			";Mod default = 60");
@@ -245,7 +248,8 @@ ModConfig LoadConfig()
 	cfg.NominalMaxSweatTime = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "NOMINAL_MAX_SWEAT_TIME", cfg.NominalMaxSweatTime));
 	cfg.MinTimeToGetSoaked = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", cfg.MinTimeToGetSoaked));
 	cfg.MinTimeToDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", cfg.MinTimeToDry));
-	cfg.TimeToHypothermiaMin = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_MIN", cfg.TimeToHypothermiaMin));
+	cfg.TimeToHypothermiaDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_DRY", cfg.TimeToHypothermiaDry));
+	cfg.TimeToHypothermiaWet = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_WET", cfg.TimeToHypothermiaWet));
 	cfg.HypothermiaRecoverNominal = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "RECOVER_NOMINAL", cfg.HypothermiaRecoverNominal));
 
 	cfg.NominalTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "NOMINAL", cfg.NominalTemperatureC);
