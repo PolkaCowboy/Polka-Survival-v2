@@ -132,7 +132,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	float seconds = dtMs / 1000.0f;
 	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);
 	float playerTemp = MISC::_GET_TEMPERATURE_AT_COORDS(pos.x, pos.y, pos.z);
-	float effectiveTemp = playerTemp;
+	state.effectiveTemp = playerTemp;
 
 	//If we are near a fire or heat source increase the effective temp used in dry calculations to accelerate drying.
 	state.fireWeight = 0.0f;
@@ -142,7 +142,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 		float fireTemp = MISC::_GET_TEMPERATURE_AT_COORDS(firePos.x, firePos.y, firePos.z);
 		state.fireWeight = Utils::MapToRange(closestFireDistance, HEAT_FADE_RADIUS, HEAT_FULL_RADIUS, 0.0f, 1.0f);
 
-		effectiveTemp = std::lerp(playerTemp, fireTemp, state.fireWeight);
+		state.effectiveTemp = std::lerp(playerTemp, fireTemp, state.fireWeight);
 	}
 
 	//Establish drydown floors. 
@@ -196,12 +196,12 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	float dryDown = 0.0f;
 
 	//approach 0 as the temp approaches freezing
-	if (effectiveTemp > cfg.FreezingTemperatureC && effectiveTemp <= cfg.NominalTemperatureC) {
-		dryDown = Utils::MapToRange(effectiveTemp, cfg.FreezingTemperatureC, cfg.NominalTemperatureC, 0.0f, 1.0f);
+	if (state.effectiveTemp > cfg.FreezingTemperatureC && state.effectiveTemp <= cfg.NominalTemperatureC) {
+		dryDown = Utils::MapToRange(state.effectiveTemp, cfg.FreezingTemperatureC, cfg.NominalTemperatureC, 0.0f, 1.0f);
 	}
 	//Increase drydown as the temp gets hotter
-	else if (effectiveTemp > cfg.NominalTemperatureC) {
-		dryDown = Utils::MapToRange(effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, state.fireWeight));
+	else if (state.effectiveTemp > cfg.NominalTemperatureC) {
+		dryDown = Utils::MapToRange(state.effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, state.fireWeight));
 	}
 
 	// Always allow drying drying down to .8, accelerating it a little. (Simulate shaking off, skin evaptoarting faster or something)
@@ -228,7 +228,7 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	state.wetness.Set(std::max(state.wetness.Value() - wetToRemoveThisTick, floor));
 
 
-	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(effectiveTemp), state.fireWeight));
+	debug.push_back(std::format("Effective Temp: {:.1f}, Fire Weight: {:.3f}", Utils::CelsiusToFahrenheit(state.effectiveTemp), state.fireWeight));
 	debug.push_back(std::format("DryDownModifier: {:.3f}, cfg {}", dryDown, cfg.MinTimeToDry));
 	debug.push_back(std::format("Wetness: {:.3f}  sweat target {:.3f} (exertion {:.2f})", state.wetness.Value(), sweatTarget, exertion));
 	debug.push_back(std::format("Submerged Level: {}", submergedLevel));

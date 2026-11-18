@@ -6,21 +6,20 @@
 #include <vector>
 #include <string>
 
+struct WetnessState;
+
 struct HypothermiaEffects
 {
-	double healthCoreDrainModifier = 0.0; // added to the health core drain rate; 0.3 = 30% faster, negative = slower
+	double healthCoreDrainModifier = 0.0;
 	double staminaCoreDrainModifier = 0.0;
 	double hitPointsDrainModifier = 0.0;
 };
 
-// Works out how cold the player is and what it costs them. Inputs come in from the other
-// systems (wetness now; temperature, clothing and heat sources to come); the result is
-// `effects`, which HurtUpdate adds to its drain rates.
 struct HypothermiaState
 {
 	HypothermiaEffects effects;
-	float severity = 0.0f; // 0 = fine, 1 = not fine. Drives the exposure ring's cold icon.
+	float severity = 0.0f; // 0 = fine, 1 = not fine.
 };
 
 void HypothermiaInit(HypothermiaState& state, const ModConfig& cfg);
-void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, float wetness, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);
+void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);

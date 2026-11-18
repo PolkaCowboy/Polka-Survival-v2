@@ -47,15 +47,19 @@ struct ModConfig
 
 	//Hypothermia
 	bool EnableHypothermia = true;
+	float TimeToHypothermiaMin = 30.0f; // Time to make Hypthermia is teh worst conditions. (Soaked, below freezing)
+	float HypothermiaRecoverNominal = 60.0f; //Time to recover when warm, without a fire bonus.
 	float MaxSweatAccumulation = 0.4f; //0-1 range. What percentage of max soak you can get purely by sweating.
 	float NominalMaxSweatTime = 180.0f; //Seconds. How long to achieve MaxSweatAccumulation at max exertion at NominalTemperatureC. Too warm clothing and hot weather will accelerate.
 	float MinTimeToGetSoaked = 30.0f; //Seconds. Time to get 100% soaked in a full rainstorm.
 	float MinTimeToDry = 240.0f; //Seconds. Time to completely dry without a heat source in a dry hot climate. Campfires/heatsources will accelerate this. Other weather factors will slow this.
 
+
 	//Temperature. Celsius. The .ini accepts F or C and converts.
 	float NominalTemperatureC = 20.0f; //68F
 	float ExtremeTemperatureC = 32.0f; //89.6F
 	float FreezingTemperatureC = 0.0f; //32F
+	float BitterColdTemperatureC = -15.0f; // 5F (Lowest I've seen in game is -1.6F)
 
 	//HUD. The compass type the player starts with, and the ring's placement for each HUD layout:
 	//regular (small); compass, which the Compass and Off options share; and expanded, which the

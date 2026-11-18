@@ -24,9 +24,9 @@ namespace
 
 	constexpr int TICKS_TO_EMPTY = 100 - std::size(SKIP_VALUES);
 
-	
+
 	int GetSafeCoreDrainValue(int v) {
-		if(std::ranges::find(SKIP_VALUES, v) != std::end(SKIP_VALUES)){
+		if (std::ranges::find(SKIP_VALUES, v) != std::end(SKIP_VALUES)) {
 			return v - 1;
 		}
 		return v;
@@ -93,6 +93,10 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		//If above threshhold allow healing. Healing rate scales up the more full the health core is
 		healingRate = Utils::ScaleToRange(static_cast<float>(playerHealthCoreValue), 0, HURTING_THRESHOLD);
 	}
+
+	if (weatherEffects.hitPointsDrainModifier > 0.0)
+		healingRate = 0.0f;
+
 	PLAYER::SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER(player, healingRate);
 
 	if (playerHealthCoreValue <= HURTING_THRESHOLD) {
@@ -103,6 +107,8 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		double timeToDie = std::lerp(cfg.HurtingTimeToDieMin, cfg.HurtingTimeToDieMax, t);
 		hitpointsRate = cfg.HurtingTimeToDieMax / timeToDie;
 	}
+
+	hitpointsRate += weatherEffects.hitPointsDrainModifier;
 
 	int numHpDrains = state.hitPoints.Update(dtMs, hitpointsRate);
 

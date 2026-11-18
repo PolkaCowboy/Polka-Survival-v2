@@ -152,9 +152,9 @@ ModConfig LoadConfig()
 			";Scales between min/max for intermediate values.\n"
 			";Value in real world minutes.");
 		ini.SetValue("HURTING", "HURTING_TIME_TO_DIE_MIN", std::format("{:g}", cfg.HurtingTimeToDieMin).c_str(),
-			";Mod default 1.5 minutes");
+			";Mod default 1.75 minutes");
 		ini.SetValue("HURTING", "HURTING_TIME_TO_DIE_MAX", std::format("{:g}", cfg.HurtingTimeToDieMax).c_str(),
-			";Mod default 3 minutes");
+			";Mod default 6 minutes");
 		ini.SetBoolValue("HURTING", "HURTING_IS_LETHAL", cfg.HurtingIsLethal,
 			";true = hurting can kill you. false = All health core drains will stop at 1hp leaving you very squishy while restoring your core.\n"
 			";Mod default = true");
@@ -167,14 +167,21 @@ ModConfig LoadConfig()
 		ini.SetValue("HYPOTHERMIA", "NOMINAL_MAX_SWEAT_TIME", std::format("{:g}", cfg.NominalMaxSweatTime).c_str(),
 			";Seconds. How long it takes to reach MAX_SWEAT_ACCUMULATION at full exertion\n"
 			";at the NOMINAL temperature. Too-warm clothing and hot weather speed this up.\n"
-			";Mod default = 60");
+			";Mod default = 180");
 		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", std::format("{:g}", cfg.MinTimeToGetSoaked).c_str(),
 			";Seconds. How long it takes to get 100% soaked in a full rainstorm.\n"
 			";Mod default = 30");
 		ini.SetValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", std::format("{:g}", cfg.MinTimeToDry).c_str(),
 			";Seconds. How long it takes to dry off completely in a warm, dry climate without a heat source.\n"
 			";Campfires and other heat sources speed this up; other weather slows it down.\n"
+			";Mod default = 240");
+		ini.SetValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_MIN", std::format("{:g}", cfg.TimeToHypothermiaMin).c_str(),
+			";Seconds. How long it takes to become fully hypothermic in the worst conditions: soaked and below freezing.\n"
+			";Milder conditions build up to a lower level instead.\n"
 			";Mod default = 30");
+		ini.SetValue("HYPOTHERMIA", "RECOVER_NOMINAL", std::format("{:g}", cfg.HypothermiaRecoverNominal).c_str(),
+			";Seconds. How long it takes to recover from full hypothermia somewhere warm, without a fire.\n"
+			";Mod default = 60");
 
 		ini.SetValue("TEMPERATURE", nullptr, nullptr,
 			";Temperature bands. Write each as a number followed by F or C, e.g. 68F or 20C.\n"
@@ -188,6 +195,9 @@ ModConfig LoadConfig()
 		ini.SetValue("TEMPERATURE", "FREEZING", FormatFahrenheit(cfg.FreezingTemperatureC).c_str(),
 			";Freezing.\n"
 			";Mod default = 32F");
+		ini.SetValue("TEMPERATURE", "BITTER_COLD", FormatFahrenheit(cfg.BitterColdTemperatureC).c_str(),
+			";Cold at full strength. Anything colder counts the same.\n"
+			";Mod default = 5F");
 
 		ini.SetValue("HUD", nullptr, nullptr,
 			";The exposure ring: fills blue as you get wet, shows a cold icon when hypothermia sets in,\n"
@@ -235,10 +245,13 @@ ModConfig LoadConfig()
 	cfg.NominalMaxSweatTime = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "NOMINAL_MAX_SWEAT_TIME", cfg.NominalMaxSweatTime));
 	cfg.MinTimeToGetSoaked = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_GET_SOAKED", cfg.MinTimeToGetSoaked));
 	cfg.MinTimeToDry = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "MIN_TIME_TO_DRY", cfg.MinTimeToDry));
+	cfg.TimeToHypothermiaMin = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "TIME_TO_HYPOTHERMIA_MIN", cfg.TimeToHypothermiaMin));
+	cfg.HypothermiaRecoverNominal = static_cast<float>(ini.GetDoubleValue("HYPOTHERMIA", "RECOVER_NOMINAL", cfg.HypothermiaRecoverNominal));
 
 	cfg.NominalTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "NOMINAL", cfg.NominalTemperatureC);
 	cfg.ExtremeTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "EXTREME", cfg.ExtremeTemperatureC);
 	cfg.FreezingTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "FREEZING", cfg.FreezingTemperatureC);
+	cfg.BitterColdTemperatureC = ReadTemperatureC(ini, "TEMPERATURE", "BITTER_COLD", cfg.BitterColdTemperatureC);
 
 	cfg.ShowExposureRing = ini.GetBoolValue("HUD", "SHOW_EXPOSURE_RING", cfg.ShowExposureRing);
 	cfg.Compass = ReadCompassType(ini, "HUD", "COMPASS_TYPE", cfg.Compass);

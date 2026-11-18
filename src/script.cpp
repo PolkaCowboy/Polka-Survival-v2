@@ -108,12 +108,16 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
-
-
 		float exertion = Exertion::GetExertion(playerPed);
 		WetnessUpdate(wetnessState, playerPed, exertion, dtMs, g_config, debugMessages);
-		//HypothermiaUpdate(hypothermiaState, playerPed, wetnessState.wetness.Value(), dtMs, g_config, debugMessages);
+		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, dtMs, g_config, debugMessages);
 		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
+
+		// Don't respawn soaked or frozen.
+		if (PLAYER::IS_PLAYER_DEAD(player)) {
+			WetnessInit(wetnessState, g_config);
+			HypothermiaInit(hypothermiaState, g_config);
+		}
 
 		bool losingHpToCold = hypothermiaState.effects.hitPointsDrainModifier > 0.0;
 		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState.severity, losingHpToCold, dtMs, now, g_config);
