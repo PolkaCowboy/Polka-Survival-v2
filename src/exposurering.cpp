@@ -1,6 +1,7 @@
 #include "exposurering.h"
 #include "../inc/sdk.h"
 #include "utils.h"
+#include "wetness.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,8 @@ namespace
 	const UI::Rgba ICON_IDLE_GREY{ 70, 70, 70, 255 };
 	// Hot color to the icon to go to when near a warming point.
 	const UI::Rgba FIRE_ORANGE{ 255, 119, 0, 255 };
-	
+	// Slightly different hot color to indicate kneeling by fire bonus.
+	const UI::Rgba FIRE_KNEELING_HOT{ 255, 190, 40, 255 };
 
 	// Swith to the expanded view layout for about 3 s of real time when the HUD is up.
 	constexpr Hash INPUT_REVEAL_HUD = 0xCF8A4ECA;
@@ -73,7 +75,7 @@ void ExposureRing::Init(State& state)
 	state.trackColor = UI::HudColor("COLOR_METER_TRACK_DEFAULT");
 }
 
-void ExposureRing::Update(State& state, float wetness, float fireWeight, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg)
+void ExposureRing::Update(State& state, const WetnessState& wetnessState, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg)
 {
 	int realNow = MISC::GET_SYSTEM_TIME();
 	if (RevealPressed())
@@ -86,7 +88,7 @@ void ExposureRing::Update(State& state, float wetness, float fireWeight, float s
 	bool expandedHud = state.revealActive || WeaponWheelOpen();
 
 	// Like the vanilla cores, the ring also shows while the HUD is revealed, even with nothing to report.
-	bool relevant = wetness > SHOW_THRESHOLD || severity > SHOW_THRESHOLD || expandedHud;
+	bool relevant = wetnessState.wetness.Value() > SHOW_THRESHOLD || severity > SHOW_THRESHOLD || expandedHud;
 	float target = (cfg.ShowExposureRing && relevant && HudVisible()) ? 1.0f : 0.0f;
 
 	// Fade towards the target rather than popping on and off.
@@ -115,7 +117,7 @@ void ExposureRing::Update(State& state, float wetness, float fireWeight, float s
 	ring.backgroundName = "rpg_core_background";
 	ring.backgroundColor = WithAlpha(BACKGROUND_TINT, state.alpha); // the texture is white: tint it dark
 	ring.backgroundScale = BACKGROUND_SCALE;
-	ring.percent = static_cast<int>(std::round(wetness * 100.0f));
+	ring.percent = static_cast<int>(std::round(wetnessState.wetness.Value() * 100.0f));
 	ring.trackColor = WithAlpha(state.trackColor, state.alpha);
 	ring.fillColor = WithAlpha(WATER_BLUE, state.alpha);
 
@@ -132,8 +134,9 @@ void ExposureRing::Update(State& state, float wetness, float fireWeight, float s
 			iconAlpha *= 0.35f + 0.65f * wave;
 		}
 	}
-	else if (fireWeight > 0) {
-		iconColor = Lerp(ICON_IDLE_GREY, FIRE_ORANGE, Utils::MapToRange(fireWeight, 0.0f, 2.0f, 0.0f, 1.0f)); //2.0f is half of MAX_HEAT_DRY_FACTOR in wetness.cpp to make full glow happen before full potential glow. TODO: Move to config
+	else if (wetnessState.fireWeight > 0) {
+		
+		iconColor = Lerp(ICON_IDLE_GREY, wetnessState.restingAtFire ? FIRE_KNEELING_HOT : FIRE_ORANGE, std::clamp(wetnessState.fireWeight, 0.0f, 1.0f));
 	}
 	ring.iconDict = "rpg_textures";
 	ring.iconName = "rpg_cold";

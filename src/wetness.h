@@ -31,6 +31,8 @@ struct WetnessState
 	float rainExposure = 0.0f;
 	float fireWeight = 0.0f;
 
+	bool restingAtFire = false;
+
 	int nextCoverProbe = 0;
 };
 

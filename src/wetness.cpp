@@ -216,8 +216,8 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	soakPenalty = std::lerp(soakPenalty, 1.0f, state.fireWeight);
 
 	dryDown *= soakPenalty;
-
-	if (IsRestingAtFire(playerPed, state.fireWeight)) {
+	state.restingAtFire = IsRestingAtFire(playerPed, state.fireWeight);
+	if (state.restingAtFire) {
 		dryDown *= REST_DRYDOWN_BOOST;
 	}
 

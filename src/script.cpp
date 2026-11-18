@@ -116,7 +116,7 @@ void ScriptMain()
 		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
 
 		bool losingHpToCold = hypothermiaState.effects.hitPointsDrainModifier > 0.0;
-		ExposureRing::Update(exposureRingState, wetnessState.wetness.Value(), wetnessState.fireWeight, hypothermiaState.severity, losingHpToCold, dtMs, now, g_config);
+		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState.severity, losingHpToCold, dtMs, now, g_config);
 		
 		
 

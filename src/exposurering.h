@@ -3,6 +3,8 @@
 #include "config.h"
 #include "ui.h"
 
+struct WetnessState;
+
 // A custom HUD core ring for exposure, drawn next to the vanilla cores:
 //  fill = how wet you are (water blue)
 //  icon = rpg_cold once hypothermia starts, bluer as it gets worse
@@ -20,6 +22,5 @@ namespace ExposureRing
 
 	void Init(State& state);
 
-	// wetness and severity are 0-1. now is GET_GAME_TIMER, for the pulse.
-	void Update(State& state, float wetness, float fireWeight, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg);
+	void Update(State& state, const WetnessState& wetnessState, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg);
 }
