@@ -4,6 +4,10 @@
 #include <iterator>
 
 namespace {
+	// The game works out outfit warmth in long_update.c (func_2416, func_2679, func_2680, func_2853):
+	// https://github.com/JayKoZa/RDR2-Decompiled-Scripts/blob/master/script_rel/long_update.c
+	// Each worn item can carry one warmth tier tag (0-4); tiers of items in the counted categories add up.
+
 	// joaat("tag_item_property"): the tag type the warmth tags belong to.
 	const Hash TAG_ITEM_PROPERTY = 0x42D03BDE;
 	// Warmth tier tags, tier 0 to 4.
@@ -17,12 +21,23 @@ namespace {
 		0x851EBBD3, 0x9989398B, 0x9EB11578, 0xAA25A557, 0xAB219849, 0xCDFBBB30, 0xE2522CFB, 0x04D4C7F4, 0x0A4688FB, 0x1B7C2B66, 0x1DFA352C,
 		0x21811425, 0x28C9B4C5, 0x290B0496, 0x29A49A30, 0x4C6BA84F, 0x5813E4A1, 0x6971A6CB, 0x6F58734F, 0x782A9DBA, 0x7A0945B8 };
 
-	// Hats
-	const Hash HAT_SLOT = 0x9925C067;
+	// Give everyday cloths that have no warmth have some warmth. 
+	// Make being naked impactful if I ever want to go through that again
+	// Slot categories from https://github.com/femga/rdr3_discoveries/blob/master/clothes/cloth_hash_names.lua
+	struct SlotWarmth {
+		Hash slot;
+		float warmth;
+	};
+	const SlotWarmth PLAIN_CLOTHING_WARMTH[] = {
+		{ 0x9925C067, 0.5f }, // hats
+		{ 0x2026C46D, 0.25f }, // shirts_full
+		{ 0x1D4C528A, 0.25f }, // pants
+		{ 0x777EC6EF, 0.25f }, // boots
+	};
 
-	//Many vanilla hats don't provide warmth. I'm giving them some.
-	const float PLAIN_HAT_WARMTH = 0.5f;
-
+	// ITEMDATABASE_FILLOUT_ITEM_INFO's output. natives.h calls the first field the category, but in game
+	// it holds the item's own hash; the second is the category the game checks. Spare room in case the
+	// game writes more than these fields.
 	struct ItemInfo {
 		alignas(8) Hash first;
 		alignas(8) Hash category;
@@ -72,8 +87,14 @@ float Clothing::WarmthSum(Ped ped) {
 			sum += tier;
 		}
 
-		if (tier < 1 && PED::_GET_CATEGORY_OF_COMPONENT_AT_INDEX(ped, i, 0) == HAT_SLOT) {
-			sum += PLAIN_HAT_WARMTH;
+		if (item != 0 && tier < 1) {
+			Hash slot = PED::_GET_CATEGORY_OF_COMPONENT_AT_INDEX(ped, i, 0);
+			for (const SlotWarmth& plain : PLAIN_CLOTHING_WARMTH) {
+				if (plain.slot == slot) {
+					sum += plain.warmth;
+					break;
+				}
+			}
 		}
 	}
 	return sum;

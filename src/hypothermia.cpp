@@ -20,18 +20,15 @@ namespace
 	//   Thus, this value will be weakened. Crank it up for more impactful wind.
 	const float WIND_MULT = 1.5f;
 
-	//Outfit too light for cold. (SA_BODYHEAT = 0)
-	const float LIGHT_CLOTHES_MULT = 1.5f;
-
-	//Sum of max clothing in game is 9.0f
-	const float MAX_WARMTH = 9.0f; 
+	//Sum of max clothing in game is 9.0f. The custom tuning in of plain clots can push this higher so upping to 9.5f
+	const float MAX_WARMTH = 9.5f; 
 
 	//We do not need to recacl outfit warmth every frame.
 	constexpr int WARMTH_CHECK_INTERVAL = 1000;
 
 	//Bitter temp will cut into clothing protection. Heavier cloths will retain more.
 	const float BITTER_INSULATION_MIN = 0.1f;
-	const float BITTER_INSULATION_MAX = 0.7f;
+	const float BITTER_INSULATION_MAX = 0.5f;
 
 	//Break point for freezing temps to fuck shit up. The closer this is to 1, the worse freezing temps will be.
 	const float COLDNESS_AT_FREEZING = 0.45;
@@ -46,7 +43,7 @@ namespace
 	const float HP_DAMAGE_THRESHOLD = 0.75F;
 
 	// 1.0 = HurtingTimeToDieMax when hypothermia is maxed.
-	const float MAX_HP_DRAIN_MODIFIER = 1.0f;
+	const float MAX_HP_DRAIN_MODIFIER = 1.8f;
 
 	// Get coldness modifying the "curve" (it's linear) below freezing based on COLDNESS_AT_FREEZING
 	float Coldness(float tempC, const ModConfig& cfg) {
