@@ -126,7 +126,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 
 	state.effects.staminaCoreDrainModifier = state.severity * MAX_STAMINA_DRAIN_MODIFIER;
 	if (state.severity > HP_DAMAGE_THRESHOLD) {
-		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.0f, MAX_HP_DRAIN_MODIFIER);
+		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.4f, MAX_HP_DRAIN_MODIFIER);
 	}
 
 	// Time left to reach the target at the current rate, if conditions stay as they are.
