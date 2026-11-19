@@ -2,6 +2,7 @@
 #include "../inc/sdk.h"
 #include "utils.h"
 #include "wetness.h"
+#include "hypothermia.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,6 +21,9 @@ namespace
 
 	// The cold icon goes from white towards this as severity rises.
 	const UI::Rgba ICE_BLUE{ 120, 190, 255, 255 };
+	// The track goes from the game's grey towards this as the hypothermia target rises. Pale and
+	// low-saturation, so it stays apart from the blue wetness fill drawn over it.
+	const UI::Rgba FROST_GREY{ 185, 200, 215, 255 };
 	// The cold icon while there's no hypothermia: a dim placeholder.
 	const UI::Rgba ICON_IDLE_GREY{ 70, 70, 70, 255 };
 	// Hot color to the icon to go to when near a warming point.
@@ -75,8 +79,11 @@ void ExposureRing::Init(State& state)
 	state.trackColor = UI::HudColor("COLOR_METER_TRACK_DEFAULT");
 }
 
-void ExposureRing::Update(State& state, const WetnessState& wetnessState, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg)
+void ExposureRing::Update(State& state, const WetnessState& wetnessState, const HypothermiaState& hypothermia, int dtMs, int now, const ModConfig& cfg)
 {
+	float severity = hypothermia.severity;
+	bool losingHp = hypothermia.effects.hitPointsDrainModifier > 0.0;
+
 	int realNow = MISC::GET_SYSTEM_TIME();
 	if (RevealPressed())
 	{
@@ -88,7 +95,7 @@ void ExposureRing::Update(State& state, const WetnessState& wetnessState, float 
 	bool expandedHud = state.revealActive || WeaponWheelOpen();
 
 	// Like the vanilla cores, the ring also shows while the HUD is revealed, even with nothing to report.
-	bool relevant = wetnessState.wetness.Value() > SHOW_THRESHOLD || severity > SHOW_THRESHOLD || expandedHud;
+	bool relevant = wetnessState.wetness.Value() > SHOW_THRESHOLD || severity > SHOW_THRESHOLD || hypothermia.target > SHOW_THRESHOLD || expandedHud;
 	float target = (cfg.ShowExposureRing && relevant && HudVisible()) ? 1.0f : 0.0f;
 
 	// Fade towards the target rather than popping on and off.
@@ -118,7 +125,12 @@ void ExposureRing::Update(State& state, const WetnessState& wetnessState, float 
 	ring.backgroundColor = WithAlpha(BACKGROUND_TINT, state.alpha); // the texture is white: tint it dark
 	ring.backgroundScale = BACKGROUND_SCALE;
 	ring.percent = static_cast<int>(std::round(wetnessState.wetness.Value() * 100.0f));
-	ring.trackColor = WithAlpha(state.trackColor, state.alpha);
+	// The track shows where hypothermia is heading: it grows with it (rpg_meter_track_9 = full ring) and pales
+	// from the game's grey towards frost. With no cold on the way it isn't drawn: rpg_meter_track_0 is a
+	// short stub, not empty.
+	float coldTarget = std::clamp(hypothermia.target, 0.0f, 1.0f);
+	ring.track = coldTarget > SHOW_THRESHOLD ? static_cast<int>(std::round(coldTarget * 9.0f)) : -1;
+	ring.trackColor = WithAlpha(Lerp(state.trackColor, FROST_GREY, coldTarget), state.alpha);
 	ring.fillColor = WithAlpha(WATER_BLUE, state.alpha);
 
 	// The cold icon is always there: dark grey while there's no hypothermia, then white turning ice blue as it gets worse, pulsing when it costs health.

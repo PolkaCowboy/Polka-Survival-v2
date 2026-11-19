@@ -114,8 +114,7 @@ void ScriptMain()
 			HypothermiaInit(hypothermiaState, g_config);
 		}
 
-		bool losingHpToCold = hypothermiaState.effects.hitPointsDrainModifier > 0.0;
-		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState.severity, losingHpToCold, dtMs, now, g_config);
+		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, dtMs, now, g_config);
 
 		// F19 toggles the debug overlay.
 		if (IsKeyJustUp(VK_F19))

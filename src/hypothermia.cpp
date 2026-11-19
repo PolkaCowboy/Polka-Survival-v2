@@ -43,7 +43,7 @@ namespace
 	const float HP_DAMAGE_THRESHOLD = 0.75F;
 
 	// 1.0 = HurtingTimeToDieMax when hypothermia is maxed.
-	const float MAX_HP_DRAIN_MODIFIER = 1.8f;
+	const float MAX_HP_DRAIN_MODIFIER = 2.5f;
 
 	// Get coldness modifying the "curve" (it's linear) below freezing based on COLDNESS_AT_FREEZING
 	float Coldness(float tempC, const ModConfig& cfg) {
@@ -111,6 +111,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 		rate = recovery / cfg.HypothermiaRecoverNominal;
 	}
 	state.severity = Utils::MoveTowards(state.severity, target, seconds * rate);
+	state.target = target;
 
 	state.effects.staminaCoreDrainModifier = state.severity * MAX_STAMINA_DRAIN_MODIFIER;
 	if (state.severity > HP_DAMAGE_THRESHOLD) {

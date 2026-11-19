@@ -82,8 +82,11 @@ void UI::DrawCoreRing(const CoreRing& ring)
 	}
 
 	// The names must stay alive until DRAW_SPRITE returns; locals do.
-	std::string trackName = std::format("rpg_meter_track_{}", std::clamp(ring.track, 0, 9));
-	GRAPHICS::DRAW_SPRITE("rpg_meter_track", trackName.c_str(), x, y, w, h, 0.0f, ring.trackColor.r, ring.trackColor.g, ring.trackColor.b, ring.trackColor.a, FALSE);
+	if (ring.track >= 0)
+	{
+		std::string trackName = std::format("rpg_meter_track_{}", std::min(ring.track, 9));
+		GRAPHICS::DRAW_SPRITE("rpg_meter_track", trackName.c_str(), x, y, w, h, 0.0f, ring.trackColor.r, ring.trackColor.g, ring.trackColor.b, ring.trackColor.a, FALSE);
+	}
 
 	if (ring.percent > 0)
 	{

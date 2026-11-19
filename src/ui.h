@@ -38,7 +38,7 @@ namespace UI
 		Rgba backgroundColor;
 		float backgroundScale = 1.0f; // relative to the ring
 		int percent = 0; // fill, 0-100 (rpg_meter_N runs 0-99, N = percent full)
-		int track = 9; // rpg_meter_track_N, 0-9: how far round the grey track goes (the core's maximum). 9 = full ring.
+		int track = 9; // rpg_meter_track_N, 0-9: how far round the grey track goes. 9 = full ring, -1 = no track.
 		Rgba trackColor;
 		Rgba fillColor;
 		const char* iconDict = nullptr; // nullptr = no icon

@@ -19,6 +19,7 @@ struct HypothermiaState
 {
 	HypothermiaEffects effects;
 	float severity = 0.0f; // 0 = fine, 1 = not fine.
+	float target = 0.0f; // where severity is heading under the current conditions, 0-1
 	float warmthSum = 0.0f; //Warmth of currently equipped clothing. (Custom caclulation)
 	int nextWarmthCheck = 0;
 };

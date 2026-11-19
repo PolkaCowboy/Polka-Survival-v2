@@ -4,9 +4,11 @@
 #include "ui.h"
 
 struct WetnessState;
+struct HypothermiaState;
 
 // A custom HUD core ring for exposure, drawn next to the vanilla cores:
 //  fill = how wet you are (water blue)
+//  track = how bad hypothermia is heading under the current conditions: grows and pales from grey to frost
 //  icon = rpg_cold once hypothermia starts, bluer as it gets worse
 //  pulsing icon = the cold is costing you health
 // It isn't part of the game's HUD, Position and size come from the config.
@@ -22,5 +24,5 @@ namespace ExposureRing
 
 	void Init(State& state);
 
-	void Update(State& state, const WetnessState& wetnessState, float severity, bool losingHp, int dtMs, int now, const ModConfig& cfg);
+	void Update(State& state, const WetnessState& wetnessState, const HypothermiaState& hypothermia, int dtMs, int now, const ModConfig& cfg);
 }
