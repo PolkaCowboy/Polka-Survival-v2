@@ -25,4 +25,4 @@ struct HypothermiaState
 };
 
 void HypothermiaInit(HypothermiaState& state, const ModConfig& cfg);
-void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);
+void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, float exersion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);

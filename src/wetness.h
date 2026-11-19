@@ -30,6 +30,7 @@ struct WetnessState
 	float nominalSweatPerSecond = 0.0f;
 	float rainExposure = 0.0f;
 	float fireWeight = 0.0f;
+	float exertion = 0.0f;
 
 	// Current temp at player. Faked vs actual in game temp at player location to let me modify how fires work.
 	float effectiveTemp = 0.0f;

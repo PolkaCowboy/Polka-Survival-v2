@@ -105,7 +105,7 @@ void ScriptMain()
 
 		float exertion = Exertion::GetExertion(playerPed);
 		WetnessUpdate(wetnessState, playerPed, exertion, dtMs, g_config, debugMessages);
-		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, dtMs, g_config, debugMessages);
+		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, dtMs, g_config, debugMessages);
 		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
 
 		// Don't respawn soaked or frozen.

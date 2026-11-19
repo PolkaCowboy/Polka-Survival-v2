@@ -10,7 +10,7 @@
 namespace
 {
 	// Being wet bad. Max multiplier at full wet
-	const float WET_MULT = 6.0f;
+	const float WET_MULT = 2.5f;
 
 	// More wet = more bad. wet feet? We can deal. Fell into lake. Not good.
 	const float WET_SPEED_CURVE = 2.0f;
@@ -22,6 +22,12 @@ namespace
 
 	//Sum of max clothing in game is 9.0f. The custom tuning in of plain clots can push this higher so upping to 9.5f
 	const float MAX_WARMTH = 9.5f; 
+
+	//Stay warm by running!? Just don't sweat too much.
+	//Slow down cold gains while exerting.
+	const float EXERTION_COLD_SLOWDOWN = 0.5f;
+	//Warm back up if too cold.
+	const float EXERTION_RECOVERY_BOOST = 2.0f;
 
 	//We do not need to recacl outfit warmth every frame.
 	constexpr int WARMTH_CHECK_INTERVAL = 1000;
@@ -67,7 +73,7 @@ void HypothermiaInit(HypothermiaState& state, const ModConfig& cfg)
 	state = HypothermiaState{};
 }
 
-void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
+void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
 {
 	state.effects = HypothermiaEffects{};
 
@@ -87,7 +93,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	float coldness = Coldness(wetness.effectiveTemp, cfg) * (1.0f - clothingProetction);
 
 	float wetChill = std::lerp(1.0f, WET_MULT, wetness.wetness.Value());
-
+	
 	float windChill = 1.0f;
 	float windSpeed = 0.0f;
 	if (!INTERIOR::IS_INTERIOR_SCENE()) {
@@ -96,6 +102,8 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	}
 
 	float target = wetness.restingAtFire ? 0.0f : std::clamp(coldness * wetChill * windChill, 0.0f, 1.0f);
+	//Allow warming up via sprinting.
+	target *= 1.0f - exertion * 0.2f;
 
 	// How fast severity moves towards the target, in severity per second.
 	bool gettingColder = state.severity < target;
@@ -103,11 +111,14 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	if (gettingColder) {
 		float soaked = std::pow(wetness.wetness.Value(), WET_SPEED_CURVE);
 		rate = std::lerp(1.0f / cfg.TimeToHypothermiaDry, 1.0f / cfg.TimeToHypothermiaWet, soaked);
-
 		rate *= std::clamp(coldness / COLDNESS_AT_FREEZING, 0.0f, 1.0f);
+		rate *= 1.0f - exertion * EXERTION_COLD_SLOWDOWN;
+
 	}
 	else {
 		float recovery = std::lerp(1.0f, FIRE_RECOVERY_BOOST, wetness.fireWeight);
+		//Move to get your blood warm
+		recovery *= std::lerp(1.0f, EXERTION_RECOVERY_BOOST, exertion);
 		rate = recovery / cfg.HypothermiaRecoverNominal;
 	}
 	state.severity = Utils::MoveTowards(state.severity, target, seconds * rate);
@@ -131,6 +142,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	debug.push_back("HYPOTHERMIA");
 	debug.push_back(std::format("severity {:.3f} -> target {:.2f}  ({})", state.severity, target, progress));
 	debug.push_back(std::format("cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f})", coldness, wetChill, windChill, windSpeed));
+	debug.push_back(std::format("exertion {:.2f}  severity moving {:.4f}/s", exertion, rate));
 	debug.push_back(std::format("warmth {:.1f} -> protection {:.0f}%", state.warmthSum, clothingProetction * 100.0f));
 	debug.push_back(std::format("effects  stamina drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.hitPointsDrainModifier));
 	debug.push_back("");
