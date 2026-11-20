@@ -16,6 +16,7 @@ namespace Hurt {
 		ElasticInterval healthCore;
 		ElasticInterval staminaCore;
 		ElasticInterval hitPoints;
+		int expectedHealthCore = -1;
 	};
 
 	void Init(State& state, const ModConfig& cfg);

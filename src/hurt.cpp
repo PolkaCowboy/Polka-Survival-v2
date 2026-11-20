@@ -70,25 +70,34 @@ void Hurt::Init(State& state, const ModConfig& cfg) {
 
 void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
 
-	//Clothing appropriatness. 0 = too cold. 50 = ok. 100 = too hot.
-	//TODO Remove from here and just have it effect sweating?
-	//TODO Make no hat effect something
+
+	// In vanilla, improper clothing changes health core drain from 90 minutes to 10.
+	// Our own extra drain setting will block the slower drain as it is fast, but not the fatser one. 
+	// We need to do schenanigans to undo the extra vanilla drain when in mismatched clothing.
 	int bodyheat = ATTRIBUTE::GET_ATTRIBUTE_POINTS(playerPed, SA_BODYHEAT);
+	int healthValue = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
+	bool emptyHealthRing = ENTITY::GET_ENTITY_HEALTH(playerPed) <= healthValue;
+	if (state.expectedHealthCore >= 0 && healthValue == state.expectedHealthCore - 1 && bodyheat != 50 && !emptyHealthRing) {
+		//Undo the vanilla drain.
+		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH, state.expectedHealthCore);
+	}
+	else {
+		state.expectedHealthCore = healthValue;
+	}
+
 
 	//Health Core
 	double healthCoreRate = 1.0;
 	double staminaCoreRate = 1.0;
 	double hitpointsRate = 0.0;
 
-	if (bodyheat != 50) {
-		staminaCoreRate += cfg.ImproperClothingStaminaDrainRate;
-	}
-
 	healthCoreRate += weatherEffects.healthCoreDrainModifier;
 	staminaCoreRate += weatherEffects.staminaCoreDrainModifier;
 
 	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);
 	DrainCore(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
+
+	state.expectedHealthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 
 	// Scale hurting rate with a red health core
 	int playerHealthCoreValue = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
