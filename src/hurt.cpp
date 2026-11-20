@@ -24,7 +24,6 @@ namespace
 
 	constexpr int TICKS_TO_EMPTY = 100 - std::size(SKIP_VALUES);
 
-
 	int GetSafeCoreDrainValue(int v) {
 		if (std::ranges::find(SKIP_VALUES, v) != std::end(SKIP_VALUES)) {
 			return v - 1;
@@ -35,6 +34,10 @@ namespace
 	//16 is the point when the health core turns from white to red. Red core = drain HP
 	constexpr int HURTING_THRESHOLD = 16;
 	constexpr int HITPOINT_DRAIN_STEPS = 50;
+
+	// We are basing all HP drain calculations on health core level 7 (Last one before the final two bonus ranks)
+	// Each health rang grants 50hp. Rank 0 = 50hp.
+	constexpr float REFERENCE_RING_HP = 400.0f;
 
 	int DrainInterval(float drainsPerDay)
 	{
@@ -50,6 +53,22 @@ namespace
 			return;
 		int value = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, core);
 		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains)));
+	}
+
+	// A gold (fortified) core is a timer separate from the 0-100 value.
+	std::string FortifyText(Ped ped, int core)
+	{
+		if (!ATTRIBUTE::_IS_ATTRIBUTE_CORE_OVERPOWERED(ped, core))
+			return "no";
+		return std::format("{:.0f} s left", ATTRIBUTE::_GET_ATTRIBUTE_CORE_OVERPOWER_SECONDS_LEFT(ped, core));
+	}
+
+	// A gold (fortified) outer ring, from tonics. Same kind of timer, on the attribute instead of the core.
+	std::string RingFortifyText(Ped ped, int attribute)
+	{
+		if (!ATTRIBUTE::_IS_ATTRIBUTE_OVERPOWERED(ped, attribute))
+			return "no";
+		return std::format("{:.0f} s left", ATTRIBUTE::_GET_ATTRIBUTE_OVERPOWER_SECONDS_LEFT(ped, attribute));
 	}
 
 	std::string NextTick(const ElasticInterval& interval, double rate)
@@ -130,6 +149,10 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	debug.push_back("CORES");
 	debug.push_back(std::format("health {}  stamina {}  dead eye {}", playerHealthCoreValue,
 		ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA), ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_DEADEYE)));
+	debug.push_back(std::format("gold cores  health: {}  stamina: {}  dead eye: {}", FortifyText(playerPed, ATTRIBUTE_CORE_HEALTH),
+		FortifyText(playerPed, ATTRIBUTE_CORE_STAMINA), FortifyText(playerPed, ATTRIBUTE_CORE_DEADEYE)));
+	debug.push_back(std::format("gold rings  health: {}  stamina: {}  dead eye: {}", RingFortifyText(playerPed, PA_HEALTH),
+		RingFortifyText(playerPed, PA_STAMINA), RingFortifyText(playerPed, PA_SPECIALABILITY)));
 	debug.push_back(std::format("next drain  health: {}  stamina: {}", NextTick(state.healthCore, healthCoreRate), NextTick(state.staminaCore, staminaCoreRate)));
 	debug.push_back(std::format("HP {}/{}  next HP drain: {}", ENTITY::GET_ENTITY_HEALTH(playerPed), ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE), NextTick(state.hitPoints, hitpointsRate)));
 	debug.push_back(std::format("healing x{:.2f}  (heals at health core {} or above)", healingRate, cfg.HealingThreshold));
@@ -138,8 +161,10 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 	//Ding hit points. We only do this beyond the hurting threshold
 	if (numHpDrains > 0) {
-		//ENTITY::GET_ENTITY_MAX_HEALTH returns total of outer ring plus 100 hp from a full core. FYI
-		float drainPerStep = static_cast<float>(ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)) / HITPOINT_DRAIN_STEPS;
+		
+		float currentMaxRingHP = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(playerPed, PA_HEALTH) + 1);
+
+		float drainPerStep = static_cast<float>(ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)) / HITPOINT_DRAIN_STEPS * std::sqrt(currentMaxRingHP / REFERENCE_RING_HP);
 
 		if (!cfg.HurtingIsLethal) {
 			int currentHealth = ENTITY::GET_ENTITY_HEALTH(playerPed);
