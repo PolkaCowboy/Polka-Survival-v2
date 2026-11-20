@@ -17,6 +17,8 @@ namespace Hurt {
 		ElasticInterval staminaCore;
 		ElasticInterval hitPoints;
 		int expectedHealthCore = -1;
+		float healthFortifySeconds = -1.0f;
+		float staminaFortifySeconds = -1.0f;
 	};
 
 	void Init(State& state, const ModConfig& cfg);

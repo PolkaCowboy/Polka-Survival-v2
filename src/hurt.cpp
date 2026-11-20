@@ -55,6 +55,40 @@ namespace
 		ATTRIBUTE::_SET_ATTRIBUTE_CORE_VALUE(ped, core, std::max(limit, GetSafeCoreDrainValue(value - drains)));
 	}
 
+	// Vanilla, good outfit drain is about 2 days for a full core.
+	constexpr float VANILLA_DRAINS_PER_DAY = 0.5f;
+
+	float FortifyScale(float drainsPerDay) {
+		if (drainsPerDay <= 0.0f) {
+			return 1.0f;
+		}
+		return std::min(1.0f, VANILLA_DRAINS_PER_DAY / drainsPerDay);
+	}
+	
+	void DrainCoreOrFortify(Ped playerPed, int core, ElasticInterval& interval, float& lastFortifySeconds, double rate, float drainsPerDay, int dtMs, int hurtLimit = 0) {
+		float left = ATTRIBUTE::_GET_ATTRIBUTE_CORE_OVERPOWER_SECONDS_LEFT(playerPed, core);
+
+		//If the timer just jumped up that means something was consumed. Scale it down.
+		if (lastFortifySeconds >= 0.0f && left > lastFortifySeconds + 1.0f) {
+			left *= FortifyScale(drainsPerDay);
+			ATTRIBUTE::_ENABLE_ATTRIBUTE_CORE_OVERPOWER(playerPed, core, left, FALSE);
+		}
+
+		if (ATTRIBUTE::_IS_ATTRIBUTE_CORE_OVERPOWERED(playerPed, core)) {
+			int extraDrains = interval.Update(dtMs, rate - 1.0);
+			if (extraDrains > 0) {
+				left = std::max(0.0f, left - extraDrains * interval.IntervalMs() / 1000.0f);
+				ATTRIBUTE::_ENABLE_ATTRIBUTE_CORE_OVERPOWER(playerPed, core, left, FALSE);
+			}
+		}
+		else {
+			DrainCore(playerPed, core, interval.Update(dtMs, rate), hurtLimit);
+		}
+
+		lastFortifySeconds = left;
+
+	}
+
 	// A gold (fortified) core is a timer separate from the 0-100 value.
 	std::string FortifyText(Ped ped, int core)
 	{
@@ -113,9 +147,9 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	healthCoreRate += weatherEffects.healthCoreDrainModifier;
 	staminaCoreRate += weatherEffects.staminaCoreDrainModifier;
 
-	DrainCore(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore.Update(dtMs, healthCoreRate), cfg.HurtingIsLethal ? 0 : 1);
-	DrainCore(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore.Update(dtMs, staminaCoreRate));
-
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, cfg.HealthCoreDrainsPerDay, dtMs, cfg.HurtingIsLethal ? 0 : 1);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, cfg.StaminaCoreDrainsPerDay, dtMs);
+	
 	state.expectedHealthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 
 	// Scale hurting rate with a red health core
@@ -164,7 +198,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		
 		float currentMaxRingHP = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(playerPed, PA_HEALTH) + 1);
 
-		float drainPerStep = static_cast<float>(ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE)) / HITPOINT_DRAIN_STEPS * std::sqrt(currentMaxRingHP / REFERENCE_RING_HP);
+		float drainPerStep = REFERENCE_RING_HP / HITPOINT_DRAIN_STEPS * std::sqrt(currentMaxRingHP / REFERENCE_RING_HP);
 
 		if (!cfg.HurtingIsLethal) {
 			int currentHealth = ENTITY::GET_ENTITY_HEALTH(playerPed);
