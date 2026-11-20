@@ -42,10 +42,15 @@ namespace
 	//Fire Recovery Bonus.
 	const float FIRE_RECOVERY_BOOST = 4.0f;
 
-	// Low chill just drains stamina faster.
-	const float MAX_STAMINA_DRAIN_MODIFIER = 1.0f;
+	// How fast chill drains stamina
+	const float MAX_STAMINA_DRAIN_MODIFIER = 3.0f;
+	// How fast chill drains health core.
+	const float MAX_HEALTH_DRAIN_MODIFIER = 5.0f;
 
-	// Just bleed cores up to this point.
+	// Lose insulation when soaked. Square the effect so damp still keeps warmth, but full soak bad.
+	const float WET_INSULATION_LOSS = 0.8f;
+
+	// Only bleed cores up to this point. After this start hurting health.
 	const float HP_DAMAGE_THRESHOLD = 0.75F;
 
 	// 1.0 = HurtingTimeToDieMax when hypothermia is maxed.
@@ -89,7 +94,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 		state.nextWarmthCheck = MISC::GET_GAME_TIMER() + WARMTH_CHECK_INTERVAL;
 	}
 
-	float clothingProetction = ClothingProtection(state.warmthSum, wetness.effectiveTemp, cfg);
+	float clothingProetction = ClothingProtection(state.warmthSum, wetness.effectiveTemp, cfg) * (1.0f - WET_INSULATION_LOSS * wetness.wetness.Value() * wetness.wetness.Value());
 	float coldness = Coldness(wetness.effectiveTemp, cfg) * (1.0f - clothingProetction);
 
 	float wetChill = std::lerp(1.0f, WET_MULT, wetness.wetness.Value());
@@ -124,7 +129,15 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	state.severity = Utils::MoveTowards(state.severity, target, seconds * rate);
 	state.target = target;
 
-	state.effects.staminaCoreDrainModifier = state.severity * MAX_STAMINA_DRAIN_MODIFIER;
+	// Let me tune the applied severifty a bit
+	float actualEffect = Utils::MapToRange(state.severity, 0.3f, 1.0f, 0.0f, 1.0f);
+
+	state.effects.staminaCoreDrainModifier = actualEffect * MAX_STAMINA_DRAIN_MODIFIER;
+	
+	int stamina = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA);
+	float staminaEmpty = 1.0f - std::clamp(stamina, 0, 100) / 100.0f; // 0 = full, 1 = empty
+	state.effects.healthCoreDrainModifier = MAX_HEALTH_DRAIN_MODIFIER * (staminaEmpty * staminaEmpty) * actualEffect;
+		
 	if (state.severity > HP_DAMAGE_THRESHOLD) {
 		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.4f, MAX_HP_DRAIN_MODIFIER);
 	}
@@ -144,6 +157,6 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	debug.push_back(std::format("cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f})", coldness, wetChill, windChill, windSpeed));
 	debug.push_back(std::format("exertion {:.2f}  severity moving {:.4f}/s", exertion, rate));
 	debug.push_back(std::format("warmth {:.1f} -> protection {:.0f}%", state.warmthSum, clothingProetction * 100.0f));
-	debug.push_back(std::format("effects  stamina drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.hitPointsDrainModifier));
+	debug.push_back(std::format("effects  stamina drain {:+.2f}  health core drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.healthCoreDrainModifier, state.effects.hitPointsDrainModifier));
 	debug.push_back("");
 }

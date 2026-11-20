@@ -60,7 +60,7 @@ struct ModConfig
 	float NominalTemperatureC = 20.0f; //68F
 	float ExtremeTemperatureC = 32.0f; //89.6F
 	float FreezingTemperatureC = 0.0f; //32F
-	float BitterColdTemperatureC = -15.0f; // 5F (Lowest I've seen in game is -1.6F)
+	float BitterColdTemperatureC = -17.8f; // 0F (Lowest I've seen in game is -4.0F)
 
 	//HUD. The compass type the player starts with, and the ring's placement for each HUD layout:
 	//regular (small); compass, which the Compass and Off options share; and expanded, which the
