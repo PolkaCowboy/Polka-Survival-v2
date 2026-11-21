@@ -15,6 +15,12 @@ namespace
 	// More wet = more bad. wet feet? We can deal. Fell into lake. Not good.
 	const float WET_SPEED_CURVE = 2.0f;
 
+	// Ramp up core drains when soaked
+	const float SOAKED_STAMINA_DRAIN_MULT = 7.5f;
+	const float SOAKED_HEALTH_DRAIN_MULT = 3.0f;
+
+	const float SWIMMING_CHILL_SPEED = 2.0f;
+
 	// Wind make chilly
 	// Note: Wind value is 0-100, but hurricane seems to max out around 40.
 	//   Thus, this value will be weakened. Crank it up for more impactful wind.
@@ -118,7 +124,9 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 		rate = std::lerp(1.0f / cfg.TimeToHypothermiaDry, 1.0f / cfg.TimeToHypothermiaWet, soaked);
 		rate *= std::clamp(coldness / COLDNESS_AT_FREEZING, 0.0f, 1.0f);
 		rate *= 1.0f - exertion * EXERTION_COLD_SLOWDOWN;
-
+		if (PED::IS_PED_SWIMMING(playerPed)) {
+			rate *= SWIMMING_CHILL_SPEED;
+		}
 	}
 	else {
 		float recovery = std::lerp(1.0f, FIRE_RECOVERY_BOOST, wetness.fireWeight);
@@ -132,11 +140,15 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	// Let me tune the applied severifty a bit
 	float actualEffect = Utils::MapToRange(state.severity, 0.3f, 1.0f, 0.0f, 1.0f);
 
-	state.effects.staminaCoreDrainModifier = actualEffect * MAX_STAMINA_DRAIN_MODIFIER;
+	float wetSquared = wetness.wetness.Value() * wetness.wetness.Value();
+	float soakedStamina = std::lerp(1.0f, SOAKED_STAMINA_DRAIN_MULT, wetSquared);
+	float soakedHealth = std::lerp(1.0f, SOAKED_HEALTH_DRAIN_MULT, wetSquared);
+
+	state.effects.staminaCoreDrainModifier = actualEffect * MAX_STAMINA_DRAIN_MODIFIER * soakedStamina;
 	
 	int stamina = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA);
 	float staminaEmpty = 1.0f - std::clamp(stamina, 0, 100) / 100.0f; // 0 = full, 1 = empty
-	state.effects.healthCoreDrainModifier = MAX_HEALTH_DRAIN_MODIFIER * (staminaEmpty * staminaEmpty) * actualEffect;
+	state.effects.healthCoreDrainModifier = MAX_HEALTH_DRAIN_MODIFIER * (staminaEmpty * staminaEmpty) * actualEffect * soakedHealth;
 		
 	if (state.severity > HP_DAMAGE_THRESHOLD) {
 		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.4f, MAX_HP_DRAIN_MODIFIER);

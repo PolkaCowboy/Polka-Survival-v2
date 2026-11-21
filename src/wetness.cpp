@@ -155,6 +155,12 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 		state.wetness.Set(submergedLevel);
 	}
 
+	//Complete soak if swimming. (Even if your head is poking out)
+	if (PED::IS_PED_SWIMMING(playerPed)) {
+		state.wetness.Set(1.0f);
+	}
+
+
 	float rainIntensity = MISC::GET_RAIN_LEVEL();
 	if (rainIntensity > 0) {
 		//Behind an interval as it can do some expensive raycasting to looks for cover
