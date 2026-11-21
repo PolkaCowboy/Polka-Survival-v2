@@ -6,7 +6,7 @@
 
 namespace {
 
-	constexpr bool SHOW_DEBUG = false;
+	constexpr bool CAN_SHOW_DEBUG = false;
 
 	// Lower cores = lower eneregy = lower movement speed.
 	// Blend health and stamina core to determing energy. 0-200 points
@@ -85,7 +85,7 @@ void SetMovementCap(Ped playerPed, MovementState& state, std::vector<std::string
 	}
 	state.capped = applyCap;
 
-	if (SHOW_DEBUG) {
+	if (CAN_SHOW_DEBUG) {
 		std::string why;
 		if (finalCap >= NO_CAP)
 			why = "no cap needed";

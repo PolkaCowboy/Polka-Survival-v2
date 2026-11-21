@@ -11,6 +11,7 @@ struct CampState {
 	CampPhase phase = CampPhase::Idle;
 	int phaseStart = 0; // Timer when current phase has started
 	int previousCampCount = -1; // How many camps existsed previous frame
+	bool kitBlocked[2] = {}; // KIT_CAMP, KIT_CAMP_SIMPLE
 };
 
 bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::string>& debug);
