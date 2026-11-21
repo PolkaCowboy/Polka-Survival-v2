@@ -35,7 +35,7 @@ void UI::DrawAllDebug(const std::vector<std::string>& debugMessages)
 	int row = 0;
 	for (const std::string& message : debugMessages) {
 		if (!message.empty())
-			UI::DrawDebugText(message.c_str(), 60.0f, 300.0f + row * 21.0f, 0.28f);
+			UI::DrawDebugText(message.c_str(), 60.0f, 100.0f + row * 21.0f, 0.28f);
 		row++;
 	}
 }

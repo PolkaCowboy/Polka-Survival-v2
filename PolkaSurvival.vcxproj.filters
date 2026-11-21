@@ -54,6 +54,9 @@
     <ClCompile Include="src\clothing.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\movement.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\script.h">
@@ -120,6 +123,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\clothing.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\movement.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\movement.cpp" />
     <ClCompile Include="src\clothing.cpp" />
     <ClCompile Include="src\exertion.cpp" />
     <ClCompile Include="src\elasticinterval.cpp" />
@@ -28,6 +29,7 @@
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\movement.h" />
     <ClInclude Include="src\clothing.h" />
     <ClInclude Include="src\exertion.h" />
     <ClInclude Include="src\elasticinterval.h" />

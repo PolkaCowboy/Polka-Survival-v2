@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "exertion.h"
 #include "exposurering.h"
+#include "movement.h"
 
 
 #include <format>
@@ -59,6 +60,7 @@ void ScriptMain()
 	HypothermiaState hypothermiaState;
 	WetnessState wetnessState;
 	ExposureRing::State exposureRingState;
+	MovementState movementState;
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
@@ -107,6 +109,7 @@ void ScriptMain()
 		WetnessUpdate(wetnessState, playerPed, exertion, dtMs, g_config, debugMessages);
 		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, dtMs, g_config, debugMessages);
 		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
+		SetMovementCap(playerPed, movementState, debugMessages);
 
 		// Don't respawn soaked or frozen.
 		if (PLAYER::IS_PLAYER_DEAD(player)) {
