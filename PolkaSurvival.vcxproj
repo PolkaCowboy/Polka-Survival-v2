@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\camp.cpp" />
     <ClCompile Include="src\movement.cpp" />
     <ClCompile Include="src\clothing.cpp" />
     <ClCompile Include="src\exertion.cpp" />
@@ -29,6 +30,7 @@
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\camp.h" />
     <ClInclude Include="src\movement.h" />
     <ClInclude Include="src\clothing.h" />
     <ClInclude Include="src\exertion.h" />

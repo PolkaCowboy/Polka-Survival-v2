@@ -10,6 +10,7 @@
 #include "exertion.h"
 #include "exposurering.h"
 #include "movement.h"
+#include "camp.h"
 
 
 #include <format>
@@ -61,6 +62,7 @@ void ScriptMain()
 	WetnessState wetnessState;
 	ExposureRing::State exposureRingState;
 	MovementState movementState;
+	CampState campState;
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
@@ -105,10 +107,14 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
+		//Pause other systems while camp animations run.
+		bool campBusy = UpdateCamp(campState, player, now, debugMessages);
+		int survivalDtMs = campBusy ? 0 : dtMs;
+
 		float exertion = Exertion::GetExertion(playerPed);
-		WetnessUpdate(wetnessState, playerPed, exertion, dtMs, g_config, debugMessages);
-		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, dtMs, g_config, debugMessages);
-		Hurt::Update(hurtState, player, playerPed, dtMs, hypothermiaState.effects, g_config, debugMessages);
+		WetnessUpdate(wetnessState, playerPed, exertion, survivalDtMs, g_config, debugMessages);
+		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, g_config, debugMessages);
+		Hurt::Update(hurtState, player, playerPed, survivalDtMs, hypothermiaState.effects, g_config, debugMessages);
 		SetMovementCap(playerPed, movementState, debugMessages);
 
 		// Don't respawn soaked or frozen.
@@ -117,7 +123,7 @@ void ScriptMain()
 			HypothermiaInit(hypothermiaState, g_config);
 		}
 
-		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, dtMs, now, g_config);
+		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, survivalDtMs, now, g_config);
 
 		// F19 toggles the debug overlay.
 		if (IsKeyJustUp(VK_F19))

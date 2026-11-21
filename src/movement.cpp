@@ -6,6 +6,8 @@
 
 namespace {
 
+	constexpr bool SHOW_DEBUG = false;
+
 	// Lower cores = lower eneregy = lower movement speed.
 	// Blend health and stamina core to determing energy. 0-200 points
 
@@ -83,21 +85,23 @@ void SetMovementCap(Ped playerPed, MovementState& state, std::vector<std::string
 	}
 	state.capped = applyCap;
 
-	std::string why;
-	if (finalCap >= NO_CAP)
-		why = "no cap needed";
-	else if (!PED::IS_PED_ON_FOOT(playerPed))
-		why = "not on foot, not applied";
-	else if (ENTITY::IS_ENTITY_DEAD(playerPed))
-		why = "dead, not applied";
-	else
-		why = "applied";
+	if (SHOW_DEBUG) {
+		std::string why;
+		if (finalCap >= NO_CAP)
+			why = "no cap needed";
+		else if (!PED::IS_PED_ON_FOOT(playerPed))
+			why = "not on foot, not applied";
+		else if (ENTITY::IS_ENTITY_DEAD(playerPed))
+			why = "dead, not applied";
+		else
+			why = "applied";
 
-	debug.push_back("MOVEMENT");
-	debug.push_back(std::format("cores {} + {} = {:.0f}{}{}  -> core cap {:.2f}", healthCore, staminaCore, sum,
-		healthGold ? "  (health ring gold +25)" : "", staminaGold ? "  (stamina ring gold +25)" : "", coreCap));
-	debug.push_back(std::format("health ring {:.0f} of {:.0f} HP, {:.0f}% missing  -> -{:.2f}", healthRing, healthRingMax,
-		ringMissing * 100.0f, MISSING_HEALTH_PENALTY * ringMissing));
-	debug.push_back(std::format("move cap {:.2f} ({})  {}", finalCap, CapFeel(finalCap), why));
-	debug.push_back("");
+		debug.push_back("MOVEMENT");
+		debug.push_back(std::format("cores {} + {} = {:.0f}{}{}  -> core cap {:.2f}", healthCore, staminaCore, sum,
+			healthGold ? "  (health ring gold +25)" : "", staminaGold ? "  (stamina ring gold +25)" : "", coreCap));
+		debug.push_back(std::format("health ring {:.0f} of {:.0f} HP, {:.0f}% missing  -> -{:.2f}", healthRing, healthRingMax,
+			ringMissing * 100.0f, MISSING_HEALTH_PENALTY * ringMissing));
+		debug.push_back(std::format("move cap {:.2f} ({})  {}", finalCap, CapFeel(finalCap), why));
+		debug.push_back("");
+	}
 }

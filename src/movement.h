@@ -10,8 +10,3 @@ struct MovementState {
 };
 
 void SetMovementCap(Ped playerPed, MovementState& state, std::vector<std::string>& debug);
-
-
-
-
-
