@@ -108,12 +108,14 @@ void ScriptMain()
 		}
 
 		//Pause other systems while camp animations run.
-		bool campBusy = UpdateCamp(campState, player, now, debugMessages);
+		bool campBusy = UpdateCamp(campState, player, playerPed, hypothermiaState.severity, now, debugMessages);
 		int survivalDtMs = campBusy ? 0 : dtMs;
 
 		float exertion = Exertion::GetExertion(playerPed);
 		WetnessUpdate(wetnessState, playerPed, exertion, survivalDtMs, g_config, debugMessages);
 		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, g_config, debugMessages);
+		// Setting up camp skipped the clock; the cores pay for that time.
+		Hurt::SimulateSkip(hurtState, playerPed, campState.skippedMs, hypothermiaState.effects, g_config);
 		Hurt::Update(hurtState, player, playerPed, survivalDtMs, hypothermiaState.effects, g_config, debugMessages);
 		SetMovementCap(playerPed, movementState, debugMessages);
 

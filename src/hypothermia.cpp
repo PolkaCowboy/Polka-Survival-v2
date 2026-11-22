@@ -9,6 +9,9 @@
 
 namespace
 {
+
+	constexpr bool CAN_SHOW_DEBUG = true;
+
 	// Wetness and swimming
 
 	// Being wet bad. Max multiplier at full wet
@@ -125,7 +128,7 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	float coldness = Coldness(wetness.effectiveTemp, cfg) * (1.0f - clothingProtection);
 
 	float wetChill = std::lerp(1.0f, WET_MULT, wet);
-	
+
 	float windChill = 1.0f;
 	float windSpeed = 0.0f;
 	if (!INTERIOR::IS_INTERIOR_SCENE()) {
@@ -164,30 +167,32 @@ void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessStat
 	float soakedHealth = std::lerp(1.0f, SOAKED_HEALTH_DRAIN_MULT, wetSquared);
 
 	state.effects.staminaCoreDrainModifier = actualEffect * MAX_STAMINA_DRAIN_MODIFIER * soakedStamina;
-	
+
 	int stamina = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA);
 	float staminaEmpty = 1.0f - std::clamp(stamina, 0, 100) / 100.0f; // 0 = full, 1 = empty
 	state.effects.healthCoreDrainModifier = MAX_HEALTH_DRAIN_MODIFIER * (staminaEmpty * staminaEmpty) * actualEffect * soakedHealth;
-		
+
 	if (state.severity > HP_DAMAGE_THRESHOLD) {
 		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.4f, MAX_HP_DRAIN_MODIFIER);
 	}
 
-	// Time left to reach the target at the current rate, if conditions stay as they are.
-	float remaining = std::abs(target - state.severity);
-	std::string progress;
-	if (remaining <= 0.0f)
-		progress = "at target";
-	else if (rate <= 0.0f)
-		progress = "not moving";
-	else
-		progress = std::format("{}, {:.0f} s to target", gettingColder ? "getting colder" : "warming up", remaining / rate);
+	if (CAN_SHOW_DEBUG) {
+		// Time left to reach the target at the current rate, if conditions stay as they are.
+		float remaining = std::abs(target - state.severity);
+		std::string progress;
+		if (remaining <= 0.0f)
+			progress = "at target";
+		else if (rate <= 0.0f)
+			progress = "not moving";
+		else
+			progress = std::format("{}, {:.0f} s to target", gettingColder ? "getting colder" : "warming up", remaining / rate);
 
-	debug.push_back("HYPOTHERMIA");
-	debug.push_back(std::format("severity {:.3f} -> target {:.2f}  ({})", state.severity, target, progress));
-	debug.push_back(std::format("cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f})", coldness, wetChill, windChill, windSpeed));
-	debug.push_back(std::format("exertion {:.2f}  severity moving {:.4f}/s", exertion, rate));
-	debug.push_back(std::format("warmth {:.1f} -> protection {:.0f}%", state.warmthSum, clothingProtection * 100.0f));
-	debug.push_back(std::format("effects  stamina drain {:+.2f}  health core drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.healthCoreDrainModifier, state.effects.hitPointsDrainModifier));
-	debug.push_back("");
+		debug.push_back("HYPOTHERMIA");
+		debug.push_back(std::format("severity {:.3f} -> target {:.2f}  ({})", state.severity, target, progress));
+		debug.push_back(std::format("cold {:.2f} x wet {:.2f} x wind {:.2f} (speed {:.1f})", coldness, wetChill, windChill, windSpeed));
+		debug.push_back(std::format("exertion {:.2f}  severity moving {:.4f}/s", exertion, rate));
+		debug.push_back(std::format("warmth {:.1f} -> protection {:.0f}%", state.warmthSum, clothingProtection * 100.0f));
+		debug.push_back(std::format("effects  stamina drain {:+.2f}  health core drain {:+.2f}  HP drain {:+.2f}", state.effects.staminaCoreDrainModifier, state.effects.healthCoreDrainModifier, state.effects.hitPointsDrainModifier));
+		debug.push_back("");
+	}
 }

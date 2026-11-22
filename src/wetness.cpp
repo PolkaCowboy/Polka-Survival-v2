@@ -8,6 +8,8 @@
 namespace
 {
 
+	constexpr bool CAN_SHOW_DEBUG = true;
+
 	// Wetness per second to go from 0.0 to 1.0 in `seconds`. 0 (or less) = never changes.
 	float RatePerSecond(float seconds)
 	{
@@ -235,13 +237,15 @@ void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs,
 	// Exposure is only re-probed while it rains, so it's stale otherwise.
 	std::string exposure = rainIntensity > 0 ? std::format("{:.2f}", state.rainExposure) : std::string("-");
 
-	debug.push_back("WETNESS");
-	debug.push_back(std::format("wetness {:.3f}  floor {:.2f} (sweat {:.2f}, water {:.2f})  exertion {:.2f}",
-		state.wetness.Value(), wetFloor, sweatTarget, submergedLevel, exertion));
-	debug.push_back(std::format("temp {:.1f}F  effective {:.1f}F  fire weight {:.2f}{}",
-		Utils::CelsiusToFahrenheit(playerTemp), Utils::CelsiusToFahrenheit(state.effectiveTemp), state.fireWeight, state.restingAtFire ? "  (resting)" : ""));
-	debug.push_back(std::format("rain {:.2f}  exposure {}  snow {:.2f}", rainIntensity, exposure, MISC::GET_SNOW_LEVEL()));
-	debug.push_back(std::format("sweating {:.4f}/s (heat x{:.2f})  drying x{:.2f}", sweatAccumulation, tempModifier, dryDown));
-	debug.push_back("");
+	if (CAN_SHOW_DEBUG) {
+		debug.push_back("WETNESS");
+		debug.push_back(std::format("wetness {:.3f}  floor {:.2f} (sweat {:.2f}, water {:.2f})  exertion {:.2f}",
+			state.wetness.Value(), wetFloor, sweatTarget, submergedLevel, exertion));
+		debug.push_back(std::format("temp {:.1f}F  effective {:.1f}F  fire weight {:.2f}{}",
+			Utils::CelsiusToFahrenheit(playerTemp), Utils::CelsiusToFahrenheit(state.effectiveTemp), state.fireWeight, state.restingAtFire ? "  (resting)" : ""));
+		debug.push_back(std::format("rain {:.2f}  exposure {}  snow {:.2f}", rainIntensity, exposure, MISC::GET_SNOW_LEVEL()));
+		debug.push_back(std::format("sweating {:.4f}/s (heat x{:.2f})  drying x{:.2f}", sweatAccumulation, tempModifier, dryDown));
+		debug.push_back("");
+	}
 }
 

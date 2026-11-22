@@ -14,7 +14,8 @@ namespace Utils
 
 	// Maps value from [inMin, inMax] onto [outMin, outMax], clamped to the ends. Either range may
 	// run backwards (e.g. 0-35C onto 1.0-0.0). inMin == inMax returns outMin.
-	float MapToRange(float value, float inMin, float inMax, float outMin, float outMax);
+	// power bends the curve: 1 is linear, 2 stays low at first and climbs late, 0.5 climbs early.
+	float MapToRange(float value, float inMin, float inMax, float outMin, float outMax, float power = 1.0f);
 
 	// The game works in Celsius; these are for config and display.
 	inline float FahrenheitToCelsius(float f) { return (f - 32.0f) * 5.0f / 9.0f; }

@@ -23,4 +23,5 @@ namespace Hurt {
 
 	void Init(State& state, const ModConfig& cfg);
 	void Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);
+	void SimulateSkip(State& state, Ped playerPed, int skippedMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg);
 }

@@ -38,13 +38,16 @@ int Utils::MapToRange(int value, int inMin, int inMax, int outMin, int outMax)
 	return (int)std::lround(std::lerp(double(outMin), double(outMax), t));
 }
 
-float Utils::MapToRange(float value, float inMin, float inMax, float outMin, float outMax)
+float Utils::MapToRange(float value, float inMin, float inMax, float outMin, float outMax, float power)
 {
 	if (inMax == inMin)
 		return outMin;
 
 	// t is 0 at inMin and 1 at inMax, whichever of the two is larger.
 	float t = std::clamp((value - inMin) / (inMax - inMin), 0.0f, 1.0f);
+	if (power != 1.0f) {
+		t = std::pow(t, power);
+	}
 	return std::lerp(outMin, outMax, t);
 }
 

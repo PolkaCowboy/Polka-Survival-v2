@@ -212,7 +212,17 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		ENTITY::_CHANGE_ENTITY_HEALTH(playerPed, -drainPerStep * numHpDrains, 0, 0);
 
 	}
-
-
 }
 
+void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg) {
+	if (skippedMs <= 0) {
+		return;
+	}
+
+	double healthCoreRate = 1.0 + weatherEffects.healthCoreDrainModifier;
+	double staminaCoreRate = 1.0 + weatherEffects.staminaCoreDrainModifier;
+
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, cfg.HealthCoreDrainsPerDay, skippedMs, cfg.HurtingIsLethal ? 0 : 1);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, cfg.StaminaCoreDrainsPerDay, skippedMs);
+	state.expectedHealthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
+}

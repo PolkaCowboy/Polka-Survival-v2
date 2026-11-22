@@ -1,22 +1,62 @@
 #include "camp.h"
 #include "log.h"
 #include "ui.h"
+#include "utils.h"
 
+#include <algorithm>
+#include <cmath>
 #include <format>
 
+
 namespace {
+
+	constexpr bool CAN_SHOW_DEBUG = true;
+	// The last attempt's fail chances, kept for the debug overlay.
+	std::string lastRoll[2];
+
+	// This ignrores the time warping that happens trhoughtout the day and I don't care.,
+	constexpr int REAL_MS_PER_GAME_MINUTE = 48 * 60 * 1000 / (24 * 60);
+
+	struct FailCause {
+		float chance;
+		const char* message;
+	};
+
 	constexpr int CONTROL_WINDOW_MS = 250;
 
-	// In game time to set up camp.
-	// TODO: Make this change based on your cores & health
-	constexpr int SETUP_MINUTES = 60;
+	// Camp setup time ranges.
+	constexpr float SETUP_MINUTES_BEST = 30.f;
+	constexpr float SETUP_MINUTES_WORST = 75.f;
+	constexpr float SETUP_RANDOM_MIN = 0.9f;
+	constexpr float SETUP_RANDOM_MAX = 1.1f;
+
+	//Bonus applied to core calculation when having gold outer ring. (Slam a tonic to help build camp in emeregency)
+	constexpr int GOLD_RING_BONUS = 25;
+
+	constexpr int CORE_RED = 16;
+
+	//Failure gates and odds
+	constexpr float HUNGER_CHANCE_RED = 0.1f;
+	constexpr float HUNGER_CHANCE_EMPTY = 0.4f;
+	constexpr float INJURY_RING_START = 0.4f;
+	constexpr float INJURY_CHANCE_EMPTY = 0.8f;
+	constexpr float FREEZING_SEVERITY_START = 0.3f;
+	constexpr float FREEZING_CHANCE_MAX = 0.5f;
+	constexpr float FREEZING_POWER = 2.0f;
+	constexpr float RAIN_LEVEL_START = 0.3f;
+	constexpr float RAIN_LEVEL_FULL = 0.7f;
+	constexpr float RAIN_POWER = 2.0f;
+	constexpr float RAIN_CHANCE_MAX = 0.5f;
+	constexpr float WIND_SPEED_START = 10.0f;
+	constexpr float WIND_SPEED_FULL = 40.0f;
+	constexpr float WIND_CHANCE_MAX = 0.2f;
 
 	// In-game time burned up on a failure
 	constexpr int FAIL_MINUTES = 30;
 
 	constexpr int STEP_TIMEOUT_MS = 20000;
 
-	// Hold screen back after failer to mock time passing
+	// Hold screen back after failure to mock time passing
 	constexpr int FAIL_HOLD_MS = 3000;
 	constexpr int FAIL_FADE_IN_MS = 1500;
 
@@ -25,12 +65,73 @@ namespace {
 	// https://github.com/JayKoZa/RDR2-Decompiled-Scripts/blob/master/script_rel/player_camp.c
 	constexpr int CAMP_CLEANUP_FLAGS = 555;
 
-	float FailChance() {
-		return 0.5f;
-	}
-
 	int PlayerCampCount() {
 		return SCRIPT::GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH(MISC::GET_HASH_KEY("player_camp"));
+	}
+
+	int CampCoreValue(Ped ped, int core, int ring) {
+		if (ATTRIBUTE::_IS_ATTRIBUTE_CORE_OVERPOWERED(ped, core)) {
+			return 100;
+		}
+		int value = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, core);
+		if (ATTRIBUTE::_IS_ATTRIBUTE_OVERPOWERED(ped, ring)) {
+			value += GOLD_RING_BONUS;
+		}
+		return std::clamp(value, 0, 100);
+	}
+
+	float HungerFailureChance(int core) {
+		if (core > CORE_RED) {
+			return 0.0f;
+		}
+		return Utils::MapToRange(static_cast<float>(core), static_cast<float>(CORE_RED), 0.0f, HUNGER_CHANCE_RED, HUNGER_CHANCE_EMPTY);
+	}
+
+	float HealthRingFraction(Ped ped) {
+		float ringMax = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(ped, PA_HEALTH) + 1);
+		float ring = static_cast<float>(ENTITY::GET_ENTITY_HEALTH(ped) - ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, ATTRIBUTE_CORE_HEALTH));
+		return std::clamp(ring / ringMax, 0.0f, 1.0f);
+	}
+
+	void RollAttempt(CampState& state, Ped ped, float hypothermiaSeverity) {
+		int healthCore = CampCoreValue(ped, ATTRIBUTE_CORE_HEALTH, PA_HEALTH);
+		int staminaCore = CampCoreValue(ped, ATTRIBUTE_CORE_STAMINA, PA_STAMINA);
+		float ring = HealthRingFraction(ped);
+
+		float condition = (healthCore / 100.0f + staminaCore / 100.f + ring) / 3.0f;
+		float minutes = Utils::MapToRange(condition, 1.0f, 0.0f, SETUP_MINUTES_BEST, SETUP_MINUTES_WORST);
+		state.setupMinutes = static_cast<int>(std::lround(minutes * MISC::GET_RANDOM_FLOAT_IN_RANGE(SETUP_RANDOM_MIN, SETUP_RANDOM_MAX)));
+
+		float wind = PED::_GET_PED_BLACKBOARD_FLOAT(ped, "WindSpeed");
+		const FailCause causes[] = {
+			{ Utils::MapToRange(ring, INJURY_RING_START, 0.0f, 0.0f, INJURY_CHANCE_EMPTY), "Your wounds made it too hard to get a fire going." },
+			{ Utils::MapToRange(hypothermiaSeverity, FREEZING_SEVERITY_START, 1.0f, 0.0f, FREEZING_CHANCE_MAX, FREEZING_POWER), "Your fingers shook too much to get a fire going." },
+			{ HungerFailureChance(healthCore), "Your lack of energy kept you from getting a fire going." },
+			{ HungerFailureChance(staminaCore), "Your lack of energy kept you from getting a fire going." },
+			{ Utils::MapToRange(MISC::GET_RAIN_LEVEL(), RAIN_LEVEL_START, RAIN_LEVEL_FULL, 0.0f, RAIN_CHANCE_MAX, RAIN_POWER), "The rain kept putting out your fire." },
+			{ Utils::MapToRange(wind, WIND_SPEED_START, WIND_SPEED_FULL, 0.0f, WIND_CHANCE_MAX), "The wind kept blowing out your fire." }
+		};
+
+		state.failReason = nullptr;
+		for (const FailCause& cause : causes) {
+			if (MISC::GET_RANDOM_FLOAT_IN_RANGE(0.0f, 1.0f) < cause.chance) {
+				state.failReason = cause.message;
+				break;
+			}
+		}
+
+		if (CAN_SHOW_DEBUG) {
+			float passChance = 1.0f;
+			for (const FailCause& cause : causes) {
+				passChance *= 1.0f - cause.chance;
+			}
+			lastRoll[0] = std::format("injury {:.1f}%  freezing {:.1f}%  hunger {:.1f}% / {:.1f}%  rain {:.1f}%  wind {:.1f}%",
+				causes[0].chance * 100.0f, causes[1].chance * 100.0f, causes[2].chance * 100.0f, causes[3].chance * 100.0f, causes[4].chance * 100.0f, causes[5].chance * 100.0f);
+			lastRoll[1] = std::format("fail chance {:.1f}%  {} min  -> {}", (1.0f - passChance) * 100.0f, state.setupMinutes,
+				state.failReason ? state.failReason : "success");
+
+		}
+
 	}
 
 	void SetPhase(CampState& state, CampPhase phase, int now) {
@@ -38,12 +139,17 @@ namespace {
 		state.phaseStart = now;
 	}
 
+	void SkipSetupTime(CampState& state) {
+		CLOCK::ADD_TO_CLOCK_TIME(0, state.setupMinutes, 0);
+		state.skippedMs = state.setupMinutes * REAL_MS_PER_GAME_MINUTE;
+	}
+
 	void FinishFailure(CampState& state, Player player, int now) {
-		CLOCK::ADD_TO_CLOCK_TIME(0, SETUP_MINUTES, 0);
+		SkipSetupTime(state);
 		CAMERA::SET_CINEMATIC_MODE_ACTIVE(FALSE);
 		PLAYER::SET_PLAYER_CONTROL(player, TRUE, 0, FALSE);
 		CAMERA::DO_SCREEN_FADE_IN(FAIL_FADE_IN_MS);
-		UI::DisplaySubtitle("You couldn't get a fire going");
+		UI::DisplaySubtitle(std::format("{} You tried for {} minutes.", state.failReason, state.setupMinutes).c_str());
 		SetPhase(state, CampPhase::Idle, now);
 	}
 
@@ -85,11 +191,12 @@ namespace {
 
 }
 
-bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::string>& debug) {
+bool UpdateCamp(CampState& state, Player player, Ped playerPed, float hypothermiaSeverity, int now, std::vector<std::string>& debug) {
 	int count = PlayerCampCount();
 	bool havePlayerControl = PLAYER::IS_PLAYER_CONTROL_ON(player);
 	bool started = state.previousCampCount >= 0 && count > state.previousCampCount;
 	state.previousCampCount = count;
+	state.skippedMs = 0;
 
 	BlockCampKits(state, count > 0 || VanillaRemembersCamp());
 
@@ -107,7 +214,7 @@ bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::strin
 		//New camp script detected. If we lose control it is a new camp set up and not a respawn.
 	case CampPhase::Watching:
 		if (!havePlayerControl) {
-			state.failing = MISC::GET_RANDOM_FLOAT_IN_RANGE(0.0f, 1.0f) < FailChance();
+			RollAttempt(state, playerPed, hypothermiaSeverity);
 			SetPhase(state, CampPhase::WaitForBlack, now);
 		}
 		else if (inPhase > CONTROL_WINDOW_MS) {
@@ -117,11 +224,11 @@ bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::strin
 
 	case CampPhase::WaitForBlack:
 		if (CAMERA::IS_SCREEN_FADED_OUT()) {
-			if (state.failing) {
+			if (state.failReason) {
 				SetPhase(state, CampPhase::FailWaitForPlacement, now);
 			}
 			else {
-				CLOCK::ADD_TO_CLOCK_TIME(0, SETUP_MINUTES, 0);
+				SkipSetupTime(state);
 				SetPhase(state, CampPhase::Finishing, now);
 			}
 		}
@@ -133,7 +240,7 @@ bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::strin
 	case CampPhase::Finishing:
 		if (havePlayerControl) {
 			if (count > 0) {
-				UI::DisplaySubtitle(std::format("You got a fire going in {} minutes", SETUP_MINUTES).c_str());
+				UI::DisplaySubtitle(std::format("You got a fire going in {} minutes", state.setupMinutes).c_str());
 			}
 			SetPhase(state, CampPhase::Idle, now);
 		}
@@ -142,7 +249,7 @@ bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::strin
 		}
 		break;
 
-	//Let the camp script move the character to the campsite before failing
+		//Let the camp script move the character to the campsite before failing
 	case CampPhase::FailWaitForPlacement:
 		if (!CAMERA::_IS_IN_CINEMATIC_MODE() || inPhase > STEP_TIMEOUT_MS) {
 			PLAYER::FORCE_CLEANUP_FOR_ALL_THREADS_WITH_THIS_NAME("player_camp", CAMP_CLEANUP_FLAGS);
@@ -169,5 +276,15 @@ bool UpdateCamp(CampState& state, Player player, int now, std::vector<std::strin
 		}
 		break;
 	}
+
+
+	if (CAN_SHOW_DEBUG && !lastRoll[0].empty()) {
+		debug.push_back("CAMP LAST ROLL");
+		debug.push_back(lastRoll[0]);
+		debug.push_back(lastRoll[1]);
+		debug.push_back("");
+	}
+
+
 	return state.phase != CampPhase::Idle;
 }
