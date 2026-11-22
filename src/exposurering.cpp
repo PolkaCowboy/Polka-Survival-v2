@@ -10,6 +10,8 @@
 
 namespace
 {
+	ExposureRing::Settings g_settings;
+
 	constexpr float FADE_SECONDS = 0.5f;
 	constexpr float SHOW_THRESHOLD = 0.01f;
 	constexpr float PULSES_PER_SECOND = 1.0f;
@@ -73,13 +75,14 @@ namespace
 	}
 }
 
-void ExposureRing::Init(State& state)
+void ExposureRing::Init(State& state, const Settings& settings)
 {
 	state = State{};
+	g_settings = settings;
 	state.trackColor = UI::HudColor("COLOR_METER_TRACK_DEFAULT");
 }
 
-void ExposureRing::Update(State& state, const Wetness::State& wetnessState, const Hypothermia::State& hypothermia, int dtMs, int now, const ModConfig& cfg)
+void ExposureRing::Update(State& state, const Wetness::State& wetnessState, const Hypothermia::State& hypothermia, int dtMs, int now)
 {
 	float severity = hypothermia.severity;
 	bool losingHp = hypothermia.effects.hitPointsDrainModifier > 0.0;
@@ -96,7 +99,7 @@ void ExposureRing::Update(State& state, const Wetness::State& wetnessState, cons
 
 	// Like the vanilla cores, the ring also shows while the HUD is revealed, even with nothing to report.
 	bool relevant = wetnessState.wetness.Value() > SHOW_THRESHOLD || severity > SHOW_THRESHOLD || hypothermia.target > SHOW_THRESHOLD || expandedHud;
-	float target = (cfg.ShowExposureRing && relevant && HudVisible()) ? 1.0f : 0.0f;
+	float target = (g_settings.showRing && relevant && HudVisible()) ? 1.0f : 0.0f;
 
 	// Fade towards the target rather than popping on and off.
 	float step = (dtMs / 1000.0f) / FADE_SECONDS;
@@ -112,9 +115,9 @@ void ExposureRing::Update(State& state, const Wetness::State& wetnessState, cons
 		return;
 
 	// The Expanded compass, an Alt tap and the weapon wheel all use the expanded layout;
-	const RingPlacement& place = (expandedHud || cfg.Compass == CompassType::Expanded) ? cfg.RingExpanded
-		: cfg.Compass == CompassType::Regular ? cfg.RingRegular
-		: cfg.RingCompass;
+	const RingPlacement& place = (expandedHud || g_settings.compass == CompassType::Expanded) ? g_settings.ringExpanded
+		: g_settings.compass == CompassType::Regular ? g_settings.ringRegular
+		: g_settings.ringCompass;
 
 	UI::CoreRing ring;
 	ring.centerX = place.x;

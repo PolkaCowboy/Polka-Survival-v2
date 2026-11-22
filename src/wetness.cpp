@@ -1,5 +1,6 @@
 #include "wetness.h"
 #include "utils.h"
+#include "temperature.h"
 
 #include <format>
 #include <cmath>
@@ -9,6 +10,8 @@ namespace
 {
 
 	constexpr bool CAN_SHOW_DEBUG = true;
+
+	Wetness::Settings g_settings;
 
 	// Wetness per second to go from 0.0 to 1.0 in `seconds`. 0 (or less) = never changes.
 	float RatePerSecond(float seconds)
@@ -27,23 +30,6 @@ namespace
 	const int LOS_FOLIAGE = 256;
 	// IgnoreGlass | IgnoreSeeThrough | IgnoreNoCollision
 	const int LOS_OPTIONS_DEFAULT = 7;
-
-	//Fire drying stuff
-
-	//Within this distance of a fire, its drying is at full strength.
-	const float HEAT_FULL_RADIUS = 3.0f;
-	//Fire drying fades out between HEAT_FULL_RADIUS and this distance.
-	const float HEAT_FADE_RADIUS = 6.0f;
-
-	// Max dry down rate when next to a heat source. 
-	const float MAX_HEAT_DRY_FACTOR = 4.0f;
-	// How much rain a fire blocks when you're within HEAT_FULL_RADIUS. 1 = all of it, 0 = none.
-	const float FIRE_RAIN_PROTECTION = 1.0f;
-
-	//Resting at fire effects
-
-	// Resting near a fire increases drying rate. (Time saving shit) 
-	const float REST_DRYDOWN_BOOST = 4.0f;
 
 	const char* const FIRE_REST_SCENARIOS[] = {
 	"WORLD_PLAYER_CAMP_FIRE_KNEEL1", "WORLD_PLAYER_CAMP_FIRE_KNEEL2", "WORLD_PLAYER_CAMP_FIRE_KNEEL3", "WORLD_PLAYER_CAMP_FIRE_KNEEL4",
@@ -121,15 +107,16 @@ namespace
 
 }
 
-void Wetness::Init(State& state, const ModConfig& cfg)
+void Wetness::Init(State& state, const Settings& settings)
 {
 	state = State{};
-	state.fullRainWetPerSecond = RatePerSecond(cfg.MinTimeToGetSoaked);
-	state.nominalDrydownPerSecond = RatePerSecond(cfg.MinTimeToDry);
-	state.nominalSweatPerSecond = RatePerSecond(cfg.NominalMaxSweatTime) * cfg.MaxSweatAccumulation;
+	g_settings = settings;
+	state.fullRainWetPerSecond = RatePerSecond(g_settings.minTimeToGetSoaked);
+	state.nominalDrydownPerSecond = RatePerSecond(g_settings.minTimeToDry);
+	state.nominalSweatPerSecond = RatePerSecond(NOMINAL_MAX_SWEAT_TIME) * g_settings.maxSweatAccumulation;
 }
 
-void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
+void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, std::vector<std::string>& debug)
 {
 	float seconds = dtMs / 1000.0f;
 	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);
@@ -149,7 +136,7 @@ void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, cons
 
 	//Establish drydown floors. 
 	float submergedLevel = ENTITY::GET_ENTITY_SUBMERGED_LEVEL(playerPed);
-	float sweatTarget = exertion * cfg.MaxSweatAccumulation;
+	float sweatTarget = exertion * g_settings.maxSweatAccumulation;
 	float wetFloor = std::max(submergedLevel, sweatTarget);
 
 	//Ooops. We fell into water.
@@ -189,7 +176,7 @@ void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, cons
 		}
 
 		//Sweat faster when above the nominal temperature
-		tempModifier = Utils::MapToRange(playerTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, 2.0f);
+		tempModifier = Utils::MapToRange(playerTemp, Temperature::Get().nominalC, Temperature::Get().extremeC, 1.0f, 2.0f);
 		sweatAccumulation *= tempModifier;
 
 		//Sweat up. Hoes down.
@@ -202,12 +189,12 @@ void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, cons
 	float dryDown = 0.0f;
 
 	//approach 0 as the temp approaches freezing
-	if (state.effectiveTemp > cfg.FreezingTemperatureC && state.effectiveTemp <= cfg.NominalTemperatureC) {
-		dryDown = Utils::MapToRange(state.effectiveTemp, cfg.FreezingTemperatureC, cfg.NominalTemperatureC, 0.0f, 1.0f);
+	if (state.effectiveTemp > Temperature::Get().freezingC && state.effectiveTemp <= Temperature::Get().nominalC) {
+		dryDown = Utils::MapToRange(state.effectiveTemp, Temperature::Get().freezingC, Temperature::Get().nominalC, 0.0f, 1.0f);
 	}
 	//Increase drydown as the temp gets hotter
-	else if (state.effectiveTemp > cfg.NominalTemperatureC) {
-		dryDown = Utils::MapToRange(state.effectiveTemp, cfg.NominalTemperatureC, cfg.ExtremeTemperatureC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, state.fireWeight));
+	else if (state.effectiveTemp > Temperature::Get().nominalC) {
+		dryDown = Utils::MapToRange(state.effectiveTemp, Temperature::Get().nominalC, Temperature::Get().extremeC, 1.0f, std::lerp(2.0f, MAX_HEAT_DRY_FACTOR, state.fireWeight));
 	}
 
 	// Always allow drying drying down to .8, accelerating it a little. (Simulate shaking off, skin evaptoarting faster or something)

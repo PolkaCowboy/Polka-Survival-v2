@@ -7,8 +7,11 @@
 #include <cmath>
 #include <format>
 
+using namespace Camp;
 
 namespace {
+
+	Camp::Settings g_settings;
 
 	constexpr bool CAN_SHOW_DEBUG = true;
 	// The last attempt's fail chances, kept for the debug overlay.
@@ -24,41 +27,9 @@ namespace {
 
 	constexpr int CONTROL_WINDOW_MS = 250;
 
-	// Camp setup time ranges.
-	constexpr float SETUP_MINUTES_BEST = 30.f;
-	constexpr float SETUP_MINUTES_WORST = 75.f;
-	constexpr float SETUP_RANDOM_MIN = 0.9f;
-	constexpr float SETUP_RANDOM_MAX = 1.1f;
-
-	//Bonus applied to core calculation when having gold outer ring. (Slam a tonic to help build camp in emeregency)
-	constexpr int GOLD_RING_BONUS = 25;
-
 	constexpr int CORE_RED = 16;
 
-	//Failure gates and odds
-	constexpr float HUNGER_CHANCE_RED = 0.1f;
-	constexpr float HUNGER_CHANCE_EMPTY = 0.4f;
-	constexpr float INJURY_RING_START = 0.4f;
-	constexpr float INJURY_CHANCE_EMPTY = 0.8f;
-	constexpr float FREEZING_SEVERITY_START = 0.3f;
-	constexpr float FREEZING_CHANCE_MAX = 0.5f;
-	constexpr float FREEZING_POWER = 2.0f;
-	constexpr float RAIN_LEVEL_START = 0.3f;
-	constexpr float RAIN_LEVEL_FULL = 0.7f;
-	constexpr float RAIN_POWER = 2.0f;
-	constexpr float RAIN_CHANCE_MAX = 0.5f;
-	constexpr float WIND_SPEED_START = 10.0f;
-	constexpr float WIND_SPEED_FULL = 40.0f;
-	constexpr float WIND_CHANCE_MAX = 0.2f;
-
-	// In-game time burned up on a failure
-	constexpr int FAIL_MINUTES = 30;
-
 	constexpr int STEP_TIMEOUT_MS = 20000;
-
-	// Hold screen back after failure to mock time passing
-	constexpr int FAIL_HOLD_MS = 3000;
-	constexpr int FAIL_FADE_IN_MS = 1500;
 
 	// player_camp ends itself when a force cleanup with these bits arrives; it checks
 	// HAS_FORCE_CLEANUP_OCCURRED(555) at startup.
@@ -99,11 +70,11 @@ namespace {
 		float ring = HealthRingFraction(ped);
 
 		float condition = (healthCore / 100.0f + staminaCore / 100.f + ring) / 3.0f;
-		float minutes = Utils::MapToRange(condition, 1.0f, 0.0f, SETUP_MINUTES_BEST, SETUP_MINUTES_WORST);
+		float minutes = Utils::MapToRange(condition, 1.0f, 0.0f, g_settings.setupMinutesBest, g_settings.setupMinutesWorst);
 		state.setupMinutes = static_cast<int>(std::lround(minutes * MISC::GET_RANDOM_FLOAT_IN_RANGE(SETUP_RANDOM_MIN, SETUP_RANDOM_MAX)));
 
 		float wind = PED::_GET_PED_BLACKBOARD_FLOAT(ped, "WindSpeed");
-		const FailCause causes[] = {
+		FailCause causes[] = {
 			{ Utils::MapToRange(ring, INJURY_RING_START, 0.0f, 0.0f, INJURY_CHANCE_EMPTY), "Your wounds made it too hard to get a fire going." },
 			{ Utils::MapToRange(hypothermiaSeverity, FREEZING_SEVERITY_START, 1.0f, 0.0f, FREEZING_CHANCE_MAX, FREEZING_POWER), "Your fingers shook too much to get a fire going." },
 			{ HungerFailureChance(healthCore), "Your lack of energy kept you from getting a fire going." },
@@ -111,6 +82,9 @@ namespace {
 			{ Utils::MapToRange(MISC::GET_RAIN_LEVEL(), RAIN_LEVEL_START, RAIN_LEVEL_FULL, 0.0f, RAIN_CHANCE_MAX, RAIN_POWER), "The rain kept putting out your fire." },
 			{ Utils::MapToRange(wind, WIND_SPEED_START, WIND_SPEED_FULL, 0.0f, WIND_CHANCE_MAX), "The wind kept blowing out your fire." }
 		};
+		for (FailCause& cause : causes) {
+			cause.chance = std::clamp(cause.chance * g_settings.failChanceScale, 0.0f, 1.0f);
+		}
 
 		state.failReason = nullptr;
 		for (const FailCause& cause : causes) {
@@ -191,6 +165,10 @@ namespace {
 
 }
 
+void Camp::Init(const Settings& settings) {
+	g_settings = settings;
+}
+
 bool Camp::Update(State& state, Player player, Ped playerPed, float hypothermiaSeverity, int now, std::vector<std::string>& debug) {
 	int count = PlayerCampCount();
 	bool havePlayerControl = PLAYER::IS_PLAYER_CONTROL_ON(player);
@@ -198,7 +176,10 @@ bool Camp::Update(State& state, Player player, Ped playerPed, float hypothermiaS
 	state.previousCampCount = count;
 	state.skippedMs = 0;
 
-	BlockCampKits(state, count > 0 || VanillaRemembersCamp());
+	BlockCampKits(state, g_settings.oneCampAtATime && (count > 0 || VanillaRemembersCamp()));
+	if (!g_settings.enabled) {
+		return false;
+	}
 
 	int inPhase = now - state.phaseStart;
 

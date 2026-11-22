@@ -11,6 +11,7 @@
 #include "exposurering.h"
 #include "movement.h"
 #include "camp.h"
+#include "temperature.h"
 
 
 #include <format>
@@ -69,10 +70,13 @@ void ScriptMain()
 	bool g_showOverlay = true;
 
 	//Set up states
-	Hurt::Init(hurtState, g_config);
-	Hypothermia::Init(hypothermiaState, g_config);
-	Wetness::Init(wetnessState, g_config);
-	ExposureRing::Init(exposureRingState);
+	Hurt::Init(hurtState, g_config.hurt);
+	Hypothermia::Init(hypothermiaState, g_config.hypothermia);
+	Wetness::Init(wetnessState, g_config.wetness);
+	ExposureRing::Init(exposureRingState, g_config.exposureRing);
+	Temperature::Init(g_config.temperature);
+	Camp::Init(g_config.camp);
+	Movement::Init(g_config.movement);
 
 	if (g_config.DisableMod)
 		return;
@@ -107,25 +111,28 @@ void ScriptMain()
 			PLAYER::_ENABLE_EAGLEEYE(player, false);
 		}
 
+		PLAYER::_SET_SPECIAL_ABILITY_DURATION_COST(player, g_config.DeadEyeDurationCost);
+		PLAYER::_SET_SPECIAL_ABILITY_ACTIVATION_COST(player, g_config.DeadEyeActivationCost, 0);
+
 		//Pause other systems while camp animations run.
 		bool campBusy = Camp::Update(campState, player, playerPed, hypothermiaState.severity, now, debugMessages);
 		int survivalDtMs = campBusy ? 0 : dtMs;
 
 		float exertion = Exertion::GetExertion(playerPed);
-		Wetness::Update(wetnessState, playerPed, exertion, survivalDtMs, g_config, debugMessages);
-		Hypothermia::Update(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, g_config, debugMessages);
+		Wetness::Update(wetnessState, playerPed, exertion, survivalDtMs, debugMessages);
+		Hypothermia::Update(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, debugMessages);
 		// Setting up camp skipped the clock; the cores pay for that time.
-		Hurt::SimulateSkip(hurtState, playerPed, campState.skippedMs, hypothermiaState.effects, g_config);
-		Hurt::Update(hurtState, player, playerPed, survivalDtMs, hypothermiaState.effects, g_config, debugMessages);
+		Hurt::SimulateSkip(hurtState, playerPed, campState.skippedMs, hypothermiaState.effects);
+		Hurt::Update(hurtState, player, playerPed, survivalDtMs, hypothermiaState.effects, debugMessages);
 		Movement::SetCap(playerPed, movementState, debugMessages);
 
 		// Don't respawn soaked or frozen.
 		if (PLAYER::IS_PLAYER_DEAD(player)) {
-			Wetness::Init(wetnessState, g_config);
-			Hypothermia::Init(hypothermiaState, g_config);
+			Wetness::Init(wetnessState, g_config.wetness);
+			Hypothermia::Init(hypothermiaState, g_config.hypothermia);
 		}
 
-		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, survivalDtMs, now, g_config);
+		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, survivalDtMs, now);
 
 		// F19 toggles the debug overlay.
 		if (IsKeyJustUp(VK_F19))

@@ -8,6 +8,8 @@
 
 namespace
 {
+	Hurt::Settings g_settings;
+
 	//In game day ms
 	// 8am-9am: 156752
 	// 2pm-3pm: 154965
@@ -34,10 +36,6 @@ namespace
 	//16 is the point when the health core turns from white to red. Red core = drain HP
 	constexpr int HURTING_THRESHOLD = 16;
 	constexpr int HITPOINT_DRAIN_STEPS = 50;
-
-	// We are basing all HP drain calculations on health core level 7 (Last one before the final two bonus ranks)
-	// Each health rang grants 50hp. Rank 0 = 50hp.
-	constexpr float REFERENCE_RING_HP = 400.0f;
 
 	int DrainInterval(float drainsPerDay)
 	{
@@ -115,13 +113,14 @@ namespace
 
 }
 
-void Hurt::Init(State& state, const ModConfig& cfg) {
-	state.healthCore = ElasticInterval(DrainInterval(cfg.HealthCoreDrainsPerDay));
-	state.staminaCore = ElasticInterval(DrainInterval(cfg.StaminaCoreDrainsPerDay));
-	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(cfg.HurtingTimeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
+void Hurt::Init(State& state, const Settings& settings) {
+	g_settings = settings;
+	state.healthCore = ElasticInterval(DrainInterval(g_settings.healthCoreDrainsPerDay));
+	state.staminaCore = ElasticInterval(DrainInterval(g_settings.staminaCoreDrainsPerDay));
+	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(g_settings.timeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
 }
 
-void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
+void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hypothermia::Effects& weatherEffects, std::vector<std::string>& debug) {
 
 
 	// In vanilla, improper clothing changes health core drain from 90 minutes to 10.
@@ -147,8 +146,8 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	healthCoreRate += weatherEffects.healthCoreDrainModifier;
 	staminaCoreRate += weatherEffects.staminaCoreDrainModifier;
 
-	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, cfg.HealthCoreDrainsPerDay, dtMs, cfg.HurtingIsLethal ? 0 : 1);
-	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, cfg.StaminaCoreDrainsPerDay, dtMs);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, g_settings.healthCoreDrainsPerDay, dtMs, g_settings.lethal ? 0 : 1);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, g_settings.staminaCoreDrainsPerDay, dtMs);
 	
 	state.expectedHealthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 
@@ -157,7 +156,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 	// Stop health regen if below threshold.
 	float healingRate = 0.0f;
-	if (cfg.HealingThreshold <= playerHealthCoreValue || ATTRIBUTE::_IS_ATTRIBUTE_CORE_OVERPOWERED(playerPed, ATTRIBUTE_CORE_HEALTH)) {
+	if (g_settings.healingThreshold <= playerHealthCoreValue || ATTRIBUTE::_IS_ATTRIBUTE_CORE_OVERPOWERED(playerPed, ATTRIBUTE_CORE_HEALTH)) {
 		//If above threshhold allow healing. Healing rate scales up the more full the health core is
 		healingRate = Utils::ScaleToRange(static_cast<float>(playerHealthCoreValue), 0, HURTING_THRESHOLD);
 	}
@@ -172,8 +171,8 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		//Get current rate scaled between min and max hurt time.
 		// 0 at core 0, 1 at core 16
 		double t = std::clamp(playerHealthCoreValue, 0, HURTING_THRESHOLD) / double(HURTING_THRESHOLD);
-		double timeToDie = std::lerp(cfg.HurtingTimeToDieMin, cfg.HurtingTimeToDieMax, t);
-		hitpointsRate = cfg.HurtingTimeToDieMax / timeToDie;
+		double timeToDie = std::lerp(g_settings.timeToDieMin, g_settings.timeToDieMax, t);
+		hitpointsRate = g_settings.timeToDieMax / timeToDie;
 	}
 
 	hitpointsRate += weatherEffects.hitPointsDrainModifier;
@@ -189,7 +188,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 		RingFortifyText(playerPed, PA_STAMINA), RingFortifyText(playerPed, PA_SPECIALABILITY)));
 	debug.push_back(std::format("next drain  health: {}  stamina: {}", NextTick(state.healthCore, healthCoreRate), NextTick(state.staminaCore, staminaCoreRate)));
 	debug.push_back(std::format("HP {}/{}  next HP drain: {}", ENTITY::GET_ENTITY_HEALTH(playerPed), ENTITY::GET_ENTITY_MAX_HEALTH(playerPed, FALSE), NextTick(state.hitPoints, hitpointsRate)));
-	debug.push_back(std::format("healing x{:.2f}  (heals at health core {} or above)", healingRate, cfg.HealingThreshold));
+	debug.push_back(std::format("healing x{:.2f}  (heals at health core {} or above)", healingRate, g_settings.healingThreshold));
 	debug.push_back("");
 
 
@@ -200,7 +199,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 		float drainPerStep = REFERENCE_RING_HP / HITPOINT_DRAIN_STEPS * std::sqrt(currentMaxRingHP / REFERENCE_RING_HP);
 
-		if (!cfg.HurtingIsLethal) {
+		if (!g_settings.lethal) {
 			int currentHealth = ENTITY::GET_ENTITY_HEALTH(playerPed);
 			int estNewHealth = static_cast<int>(std::round(currentHealth - (drainPerStep * numHpDrains)));
 			if (estNewHealth <= playerHealthCoreValue) {
@@ -214,7 +213,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	}
 }
 
-void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg) {
+void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const Hypothermia::Effects& weatherEffects) {
 	if (skippedMs <= 0) {
 		return;
 	}
@@ -222,7 +221,7 @@ void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const Hypoth
 	double healthCoreRate = 1.0 + weatherEffects.healthCoreDrainModifier;
 	double staminaCoreRate = 1.0 + weatherEffects.staminaCoreDrainModifier;
 
-	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, cfg.HealthCoreDrainsPerDay, skippedMs, cfg.HurtingIsLethal ? 0 : 1);
-	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, cfg.StaminaCoreDrainsPerDay, skippedMs);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_HEALTH, state.healthCore, state.healthFortifySeconds, healthCoreRate, g_settings.healthCoreDrainsPerDay, skippedMs, g_settings.lethal ? 0 : 1);
+	DrainCoreOrFortify(playerPed, ATTRIBUTE_CORE_STAMINA, state.staminaCore, state.staminaFortifySeconds, staminaCoreRate, g_settings.staminaCoreDrainsPerDay, skippedMs);
 	state.expectedHealthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 }

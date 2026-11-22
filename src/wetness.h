@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #include "../inc/sdk.h"
 
 #include <algorithm>
@@ -42,6 +41,34 @@ namespace Wetness
 		int nextCoverProbe = 0;
 	};
 
-	void Init(State& state, const ModConfig& cfg);
-	void Update(State& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug);
+	struct Settings
+	{
+		float maxSweatAccumulation = 0.4f; //0-1 range. What percentage of max soak you can get purely by sweating.
+		float minTimeToGetSoaked = 30.0f; //Seconds. Time to get 100% soaked in a full rainstorm.
+		float minTimeToDry = 240.0f; //Seconds. Time to completely dry without a heat source in a dry hot climate. Campfires/heatsources will accelerate this. Other weather factors will slow this.
+	};
+
+	// Seconds to reach the INI's MAX_SWEAT_ACCUMULATION at full exertion, at the NOMINAL temperature.
+	// Too-warm clothing and hot weather speed this up.
+	constexpr float NOMINAL_MAX_SWEAT_TIME = 180.0f;
+
+	//Fire drying stuff
+
+	//Within this distance of a fire, its drying is at full strength.
+	const float HEAT_FULL_RADIUS = 3.0f;
+	//Fire drying fades out between HEAT_FULL_RADIUS and this distance.
+	const float HEAT_FADE_RADIUS = 6.0f;
+
+	// Max dry down rate when next to a heat source. 
+	const float MAX_HEAT_DRY_FACTOR = 4.0f;
+	// How much rain a fire blocks when you're within HEAT_FULL_RADIUS. 1 = all of it, 0 = none.
+	const float FIRE_RAIN_PROTECTION = 1.0f;
+
+	//Resting at fire effects
+
+	// Resting near a fire increases drying rate. (Time saving shit) 
+	const float REST_DRYDOWN_BOOST = 4.0f;
+
+	void Init(State& state, const Settings& settings);
+	void Update(State& state, Ped playerPed, float exertion, int dtMs, std::vector<std::string>& debug);
 }

@@ -28,6 +28,7 @@
     <ClCompile Include="src\hypothermia.cpp" />
     <ClCompile Include="src\wetness.cpp" />
     <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\temperature.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camp.h" />
@@ -46,6 +47,7 @@
     <ClInclude Include="src\hypothermia.h" />
     <ClInclude Include="src\wetness.h" />
     <ClInclude Include="src\utils.h" />
+    <ClInclude Include="src\temperature.h" />
     <ClInclude Include="inc\sdk.h" />
     <ClInclude Include="inc\SimpleIni.h" />
     <ClInclude Include="inc\types.h" />
