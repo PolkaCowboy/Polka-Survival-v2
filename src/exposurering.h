@@ -3,8 +3,8 @@
 #include "config.h"
 #include "ui.h"
 
-struct WetnessState;
-struct HypothermiaState;
+namespace Wetness { struct State; }
+namespace Hypothermia { struct State; }
 
 // A custom HUD core ring for exposure, drawn next to the vanilla cores:
 //  fill = how wet you are (water blue)
@@ -24,5 +24,5 @@ namespace ExposureRing
 
 	void Init(State& state);
 
-	void Update(State& state, const WetnessState& wetnessState, const HypothermiaState& hypothermia, int dtMs, int now, const ModConfig& cfg);
+	void Update(State& state, const Wetness::State& wetnessState, const Hypothermia::State& hypothermia, int dtMs, int now, const ModConfig& cfg);
 }

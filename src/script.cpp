@@ -58,11 +58,11 @@ void ScriptMain()
 {
 	// All the running timers and flags
 	Hurt::State hurtState;
-	HypothermiaState hypothermiaState;
-	WetnessState wetnessState;
+	Hypothermia::State hypothermiaState;
+	Wetness::State wetnessState;
 	ExposureRing::State exposureRingState;
-	MovementState movementState;
-	CampState campState;
+	Movement::State movementState;
+	Camp::State campState;
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
@@ -70,8 +70,8 @@ void ScriptMain()
 
 	//Set up states
 	Hurt::Init(hurtState, g_config);
-	HypothermiaInit(hypothermiaState, g_config);
-	WetnessInit(wetnessState, g_config);
+	Hypothermia::Init(hypothermiaState, g_config);
+	Wetness::Init(wetnessState, g_config);
 	ExposureRing::Init(exposureRingState);
 
 	if (g_config.DisableMod)
@@ -108,21 +108,21 @@ void ScriptMain()
 		}
 
 		//Pause other systems while camp animations run.
-		bool campBusy = UpdateCamp(campState, player, playerPed, hypothermiaState.severity, now, debugMessages);
+		bool campBusy = Camp::Update(campState, player, playerPed, hypothermiaState.severity, now, debugMessages);
 		int survivalDtMs = campBusy ? 0 : dtMs;
 
 		float exertion = Exertion::GetExertion(playerPed);
-		WetnessUpdate(wetnessState, playerPed, exertion, survivalDtMs, g_config, debugMessages);
-		HypothermiaUpdate(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, g_config, debugMessages);
+		Wetness::Update(wetnessState, playerPed, exertion, survivalDtMs, g_config, debugMessages);
+		Hypothermia::Update(hypothermiaState, playerPed, wetnessState, exertion, survivalDtMs, g_config, debugMessages);
 		// Setting up camp skipped the clock; the cores pay for that time.
 		Hurt::SimulateSkip(hurtState, playerPed, campState.skippedMs, hypothermiaState.effects, g_config);
 		Hurt::Update(hurtState, player, playerPed, survivalDtMs, hypothermiaState.effects, g_config, debugMessages);
-		SetMovementCap(playerPed, movementState, debugMessages);
+		Movement::SetCap(playerPed, movementState, debugMessages);
 
 		// Don't respawn soaked or frozen.
 		if (PLAYER::IS_PLAYER_DEAD(player)) {
-			WetnessInit(wetnessState, g_config);
-			HypothermiaInit(hypothermiaState, g_config);
+			Wetness::Init(wetnessState, g_config);
+			Hypothermia::Init(hypothermiaState, g_config);
 		}
 
 		ExposureRing::Update(exposureRingState, wetnessState, hypothermiaState, survivalDtMs, now, g_config);

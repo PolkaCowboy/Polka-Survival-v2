@@ -79,7 +79,7 @@ void ExposureRing::Init(State& state)
 	state.trackColor = UI::HudColor("COLOR_METER_TRACK_DEFAULT");
 }
 
-void ExposureRing::Update(State& state, const WetnessState& wetnessState, const HypothermiaState& hypothermia, int dtMs, int now, const ModConfig& cfg)
+void ExposureRing::Update(State& state, const Wetness::State& wetnessState, const Hypothermia::State& hypothermia, int dtMs, int now, const ModConfig& cfg)
 {
 	float severity = hypothermia.severity;
 	bool losingHp = hypothermia.effects.hitPointsDrainModifier > 0.0;

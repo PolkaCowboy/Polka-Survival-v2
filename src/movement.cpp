@@ -46,12 +46,12 @@ namespace {
 
 }
 
-void SetMovementCap(Ped playerPed, MovementState& state, std::vector<std::string>& debug) {
+void Movement::SetCap(Ped playerPed, State& state, std::vector<std::string>& debug) {
 	int healthCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_HEALTH);
 	int staminaCore = ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(playerPed, ATTRIBUTE_CORE_STAMINA);
 	float coreCap;
 
-	float healthRingMax = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(playerPed, PA_HEALTH) + 1);
+	float healthRingMax = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_BASE_RANK(playerPed, PA_HEALTH) + 1);
 	float healthRing = static_cast<float>(ENTITY::GET_ENTITY_HEALTH(playerPed) - healthCore);
 	float ringMissing = 1.0f - std::clamp(healthRing / healthRingMax, 0.0f, 1.0f);
 

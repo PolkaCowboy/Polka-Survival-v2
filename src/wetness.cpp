@@ -121,15 +121,15 @@ namespace
 
 }
 
-void WetnessInit(WetnessState& state, const ModConfig& cfg)
+void Wetness::Init(State& state, const ModConfig& cfg)
 {
-	state = WetnessState{};
+	state = State{};
 	state.fullRainWetPerSecond = RatePerSecond(cfg.MinTimeToGetSoaked);
 	state.nominalDrydownPerSecond = RatePerSecond(cfg.MinTimeToDry);
 	state.nominalSweatPerSecond = RatePerSecond(cfg.NominalMaxSweatTime) * cfg.MaxSweatAccumulation;
 }
 
-void WetnessUpdate(WetnessState& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
+void Wetness::Update(State& state, Ped playerPed, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
 {
 	float seconds = dtMs / 1000.0f;
 	Vector3 pos = ENTITY::GET_ENTITY_COORDS(playerPed, TRUE, FALSE);

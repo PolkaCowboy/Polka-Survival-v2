@@ -99,14 +99,14 @@ namespace
 
 }
 
-void HypothermiaInit(HypothermiaState& state, const ModConfig& cfg)
+void Hypothermia::Init(State& state, const ModConfig& cfg)
 {
-	state = HypothermiaState{};
+	state = State{};
 }
 
-void HypothermiaUpdate(HypothermiaState& state, Ped playerPed, const WetnessState& wetness, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
+void Hypothermia::Update(State& state, Ped playerPed, const Wetness::State& wetness, float exertion, int dtMs, const ModConfig& cfg, std::vector<std::string>& debug)
 {
-	state.effects = HypothermiaEffects{};
+	state.effects = Effects{};
 
 	if (!cfg.EnableHypothermia) {
 		debug.push_back("HYPOTHERMIA off");

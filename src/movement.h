@@ -5,8 +5,11 @@
 #include <vector>
 #include <string>
 
-struct MovementState {
-	bool capped = false; //If we capped the speed last frame.
-};
+namespace Movement {
 
-void SetMovementCap(Ped playerPed, MovementState& state, std::vector<std::string>& debug);
+	struct State {
+		bool capped = false; //If we capped the speed last frame.
+	};
+
+	void SetCap(Ped playerPed, State& state, std::vector<std::string>& debug);
+}

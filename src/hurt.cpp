@@ -121,7 +121,7 @@ void Hurt::Init(State& state, const ModConfig& cfg) {
 	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(cfg.HurtingTimeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
 }
 
-void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
+void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug) {
 
 
 	// In vanilla, improper clothing changes health core drain from 90 minutes to 10.
@@ -196,7 +196,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	//Ding hit points. We only do this beyond the hurting threshold
 	if (numHpDrains > 0) {
 		
-		float currentMaxRingHP = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(playerPed, PA_HEALTH) + 1);
+		float currentMaxRingHP = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_BASE_RANK(playerPed, PA_HEALTH) + 1);
 
 		float drainPerStep = REFERENCE_RING_HP / HITPOINT_DRAIN_STEPS * std::sqrt(currentMaxRingHP / REFERENCE_RING_HP);
 
@@ -214,7 +214,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 	}
 }
 
-void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg) {
+void Hurt::SimulateSkip(State& state, Ped playerPed, int skippedMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg) {
 	if (skippedMs <= 0) {
 		return;
 	}

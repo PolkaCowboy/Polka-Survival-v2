@@ -88,12 +88,12 @@ namespace {
 	}
 
 	float HealthRingFraction(Ped ped) {
-		float ringMax = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_RANK(ped, PA_HEALTH) + 1);
+		float ringMax = 50.0f * (ATTRIBUTE::GET_ATTRIBUTE_BASE_RANK(ped, PA_HEALTH) + 1);
 		float ring = static_cast<float>(ENTITY::GET_ENTITY_HEALTH(ped) - ATTRIBUTE::_GET_ATTRIBUTE_CORE_VALUE(ped, ATTRIBUTE_CORE_HEALTH));
 		return std::clamp(ring / ringMax, 0.0f, 1.0f);
 	}
 
-	void RollAttempt(CampState& state, Ped ped, float hypothermiaSeverity) {
+	void RollAttempt(Camp::State& state, Ped ped, float hypothermiaSeverity) {
 		int healthCore = CampCoreValue(ped, ATTRIBUTE_CORE_HEALTH, PA_HEALTH);
 		int staminaCore = CampCoreValue(ped, ATTRIBUTE_CORE_STAMINA, PA_STAMINA);
 		float ring = HealthRingFraction(ped);
@@ -134,23 +134,23 @@ namespace {
 
 	}
 
-	void SetPhase(CampState& state, CampPhase phase, int now) {
+	void SetPhase(Camp::State& state, Camp::Phase phase, int now) {
 		state.phase = phase;
 		state.phaseStart = now;
 	}
 
-	void SkipSetupTime(CampState& state) {
+	void SkipSetupTime(Camp::State& state) {
 		CLOCK::ADD_TO_CLOCK_TIME(0, state.setupMinutes, 0);
 		state.skippedMs = state.setupMinutes * REAL_MS_PER_GAME_MINUTE;
 	}
 
-	void FinishFailure(CampState& state, Player player, int now) {
+	void FinishFailure(Camp::State& state, Player player, int now) {
 		SkipSetupTime(state);
 		CAMERA::SET_CINEMATIC_MODE_ACTIVE(FALSE);
 		PLAYER::SET_PLAYER_CONTROL(player, TRUE, 0, FALSE);
 		CAMERA::DO_SCREEN_FADE_IN(FAIL_FADE_IN_MS);
 		UI::DisplaySubtitle(std::format("{} You tried for {} minutes.", state.failReason, state.setupMinutes).c_str());
-		SetPhase(state, CampPhase::Idle, now);
+		SetPhase(state, Camp::Phase::Idle, now);
 	}
 
 	const char* const CAMP_KITS[] = { "KIT_CAMP", "KIT_CAMP_SIMPLE" };
@@ -169,7 +169,7 @@ namespace {
 	}
 
 	//Block Camp kit if a camp already exists
-	void BlockCampKits(CampState& state, bool campStanding) {
+	void BlockCampKits(Camp::State& state, bool campStanding) {
 		int inventory = INVENTORY::_INVENTORY_IS_USING_BACKUP_INVENTORY() ? 5 : 1;
 
 		for (int i = 0; i < std::ssize(CAMP_KITS); i++) {
@@ -191,7 +191,7 @@ namespace {
 
 }
 
-bool UpdateCamp(CampState& state, Player player, Ped playerPed, float hypothermiaSeverity, int now, std::vector<std::string>& debug) {
+bool Camp::Update(State& state, Player player, Ped playerPed, float hypothermiaSeverity, int now, std::vector<std::string>& debug) {
 	int count = PlayerCampCount();
 	bool havePlayerControl = PLAYER::IS_PLAYER_CONTROL_ON(player);
 	bool started = state.previousCampCount >= 0 && count > state.previousCampCount;
@@ -204,70 +204,70 @@ bool UpdateCamp(CampState& state, Player player, Ped playerPed, float hypothermi
 
 	switch (state.phase) {
 		//No camp, or in a camp that already exists. Move to watching when a new camp script is detected.
-	case CampPhase::Idle:
+	case Phase::Idle:
 		if (started) {
 			state.startCount = count;
-			SetPhase(state, CampPhase::Watching, now);
+			SetPhase(state, Phase::Watching, now);
 		}
 		break;
 
 		//New camp script detected. If we lose control it is a new camp set up and not a respawn.
-	case CampPhase::Watching:
+	case Phase::Watching:
 		if (!havePlayerControl) {
 			RollAttempt(state, playerPed, hypothermiaSeverity);
-			SetPhase(state, CampPhase::WaitForBlack, now);
+			SetPhase(state, Phase::WaitForBlack, now);
 		}
 		else if (inPhase > CONTROL_WINDOW_MS) {
-			SetPhase(state, CampPhase::Idle, now);
+			SetPhase(state, Phase::Idle, now);
 		}
 		break;
 
-	case CampPhase::WaitForBlack:
+	case Phase::WaitForBlack:
 		if (CAMERA::IS_SCREEN_FADED_OUT()) {
 			if (state.failReason) {
-				SetPhase(state, CampPhase::FailWaitForPlacement, now);
+				SetPhase(state, Phase::FailWaitForPlacement, now);
 			}
 			else {
 				SkipSetupTime(state);
-				SetPhase(state, CampPhase::Finishing, now);
+				SetPhase(state, Phase::Finishing, now);
 			}
 		}
 		else if (havePlayerControl || inPhase > STEP_TIMEOUT_MS) {
-			SetPhase(state, CampPhase::Idle, now);
+			SetPhase(state, Phase::Idle, now);
 		}
 		break;
 
-	case CampPhase::Finishing:
+	case Phase::Finishing:
 		if (havePlayerControl) {
 			if (count > 0) {
 				UI::DisplaySubtitle(std::format("You got a fire going in {} minutes", state.setupMinutes).c_str());
 			}
-			SetPhase(state, CampPhase::Idle, now);
+			SetPhase(state, Phase::Idle, now);
 		}
 		else if (inPhase > STEP_TIMEOUT_MS) {
-			SetPhase(state, CampPhase::Idle, now);
+			SetPhase(state, Phase::Idle, now);
 		}
 		break;
 
 		//Let the camp script move the character to the campsite before failing
-	case CampPhase::FailWaitForPlacement:
+	case Phase::FailWaitForPlacement:
 		if (!CAMERA::_IS_IN_CINEMATIC_MODE() || inPhase > STEP_TIMEOUT_MS) {
 			PLAYER::FORCE_CLEANUP_FOR_ALL_THREADS_WITH_THIS_NAME("player_camp", CAMP_CLEANUP_FLAGS);
 			CAMERA::DO_SCREEN_FADE_OUT(0);
-			SetPhase(state, CampPhase::FailWaitForCampGone, now);
+			SetPhase(state, Phase::FailWaitForCampGone, now);
 		}
 		break;
 
-	case CampPhase::FailWaitForCampGone:
+	case Phase::FailWaitForCampGone:
 		if (count < state.startCount || inPhase > STEP_TIMEOUT_MS) {
 			CAMERA::SET_CINEMATIC_MODE_ACTIVE(FALSE);
 			PLAYER::SET_PLAYER_CONTROL(player, FALSE, 0, FALSE);
 			CAMERA::DO_SCREEN_FADE_OUT(0);
-			SetPhase(state, CampPhase::FailHoldBlack, now);
+			SetPhase(state, Phase::FailHoldBlack, now);
 		}
 		break;
 
-	case CampPhase::FailHoldBlack:
+	case Phase::FailHoldBlack:
 		if (!CAMERA::IS_SCREEN_FADED_OUT() && !CAMERA::IS_SCREEN_FADING_OUT()) {
 			CAMERA::DO_SCREEN_FADE_OUT(0);
 		}
@@ -286,5 +286,5 @@ bool UpdateCamp(CampState& state, Player player, Ped playerPed, float hypothermi
 	}
 
 
-	return state.phase != CampPhase::Idle;
+	return state.phase != Phase::Idle;
 }

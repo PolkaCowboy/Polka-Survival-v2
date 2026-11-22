@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-struct HypothermiaEffects;
+namespace Hypothermia { struct Effects; }
 
 namespace Hurt {
 
@@ -22,6 +22,6 @@ namespace Hurt {
 	};
 
 	void Init(State& state, const ModConfig& cfg);
-	void Update(State& state, Player player, Ped playerPed, int dtMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);
-	void SimulateSkip(State& state, Ped playerPed, int skippedMs, const HypothermiaEffects& weatherEffects, const ModConfig& cfg);
+	void Update(State& state, Player player, Ped playerPed, int dtMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg, std::vector<std::string>& debug);
+	void SimulateSkip(State& state, Ped playerPed, int skippedMs, const Hypothermia::Effects& weatherEffects, const ModConfig& cfg);
 }
