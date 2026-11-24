@@ -118,6 +118,7 @@ void Hurt::Init(State& state, const Settings& settings) {
 	state.healthCore = ElasticInterval(DrainInterval(g_settings.healthCoreDrainsPerDay));
 	state.staminaCore = ElasticInterval(DrainInterval(g_settings.staminaCoreDrainsPerDay));
 	state.hitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(g_settings.timeToDieMax) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
+	state.coldHitPoints = ElasticInterval(static_cast<int>(std::round(static_cast<double>(Hypothermia::COLD_RING_MINUTES_AT_MAX) * 60 * 1000 / HITPOINT_DRAIN_STEPS)));
 }
 
 void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hypothermia::Effects& weatherEffects, std::vector<std::string>& debug) {
@@ -177,7 +178,7 @@ void Hurt::Update(State& state, Player player, Ped playerPed, int dtMs, const Hy
 
 	hitpointsRate += weatherEffects.hitPointsDrainModifier;
 
-	int numHpDrains = state.hitPoints.Update(dtMs, hitpointsRate);
+	int numHpDrains = state.hitPoints.Update(dtMs, hitpointsRate) + state.coldHitPoints.Update(dtMs, weatherEffects.hitPointsDrainModifier);
 
 	debug.push_back("CORES");
 	debug.push_back(std::format("health {}  stamina {}  dead eye {}", playerHealthCoreValue,

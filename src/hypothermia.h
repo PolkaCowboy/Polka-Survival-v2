@@ -98,6 +98,10 @@ namespace Hypothermia
 	// Only bleed cores up to this point. After this start hurting health.
 	const float HP_DAMAGE_THRESHOLD = 0.75F;
 
+	// Time to lose outer hitpoitn ring when chilled.
+	const float COLD_RING_MINUTES_AT_THRESHOLD = 6.0f;
+	const float COLD_RING_MINUTES_AT_MAX = 2.4f;
+
 	// 1.0 = HurtingTimeToDieMax when hypothermia is maxed.
 	const float MAX_HP_DRAIN_MODIFIER = 2.5f;
 

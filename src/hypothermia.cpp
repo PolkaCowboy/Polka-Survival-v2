@@ -114,7 +114,7 @@ void Hypothermia::Update(State& state, Ped playerPed, const Wetness::State& wetn
 	state.effects.healthCoreDrainModifier = MAX_HEALTH_DRAIN_MODIFIER * (staminaEmpty * staminaEmpty) * actualEffect * soakedHealth;
 
 	if (state.severity > HP_DAMAGE_THRESHOLD) {
-		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, 0.4f, MAX_HP_DRAIN_MODIFIER);
+		state.effects.hitPointsDrainModifier = Utils::MapToRange(state.severity, HP_DAMAGE_THRESHOLD, 1.0f, COLD_RING_MINUTES_AT_MAX / COLD_RING_MINUTES_AT_THRESHOLD, 1.0f);
 	}
 
 	// INI EFFECT_STRENGTH scales what the cold costs.

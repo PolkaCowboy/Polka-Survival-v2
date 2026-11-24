@@ -15,6 +15,7 @@ namespace Hurt {
 		ElasticInterval healthCore;
 		ElasticInterval staminaCore;
 		ElasticInterval hitPoints;
+		ElasticInterval coldHitPoints;
 		int expectedHealthCore = -1;
 		float healthFortifySeconds = -1.0f;
 		float staminaFortifySeconds = -1.0f;
