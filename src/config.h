@@ -30,7 +30,7 @@ struct ModConfig
 	Movement::Settings movement;
 	ExposureRing::Settings exposureRing;
 
-	bool enableTextLogging = true;
+	bool enableTextLogging = false;
 
 };
 

@@ -67,7 +67,7 @@ void ScriptMain()
 
 	ModConfig g_config = LoadConfig();
 	std::vector<std::string> debugMessages;
-	bool g_showOverlay = true;
+	bool g_showOverlay = false;
 
 	//Set up states
 	Hurt::Init(hurtState, g_config.hurt);
