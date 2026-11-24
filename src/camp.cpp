@@ -176,6 +176,12 @@ bool Camp::Update(State& state, Player player, Ped playerPed, float hypothermiaS
 	state.previousCampCount = count;
 	state.skippedMs = 0;
 
+	//Prevent "cheating" by setting up or warping to a camp while holding an animal that can be cooked whole by disabling the "Cook" button.
+	Entity carried = PED::_GET_FIRST_ENTITY_PED_IS_CARRYING(playerPed);
+	if (ENTITY::DOES_ENTITY_EXIST(carried) && ENTITY::IS_ENTITY_A_PED(carried) && ENTITY::GET_IS_ANIMAL(carried)) {
+		PAD::DISABLE_CONTROL_ACTION(0, MISC::GET_HASH_KEY("INPUT_CONTEXT_B"), FALSE);
+	}
+
 	BlockCampKits(state, g_settings.oneCampAtATime && (count > 0 || VanillaRemembersCamp()));
 	if (!g_settings.enabled) {
 		return false;
