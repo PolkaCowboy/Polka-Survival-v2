@@ -55,7 +55,7 @@ namespace
 
 	bool HudVisible()
 	{
-		return !HUD::IS_HUD_HIDDEN() && !HUD::IS_PAUSE_MENU_ACTIVE() && !CAMERA::IS_SCREEN_FADED_OUT();
+		return !HUD::IS_HUD_HIDDEN() && !HUD::IS_PAUSE_MENU_ACTIVE() && !CAMERA::IS_SCREEN_FADED_OUT() && !CAMERA::_IS_IN_CINEMATIC_MODE();
 	}
 
 	UI::Rgba Lerp(const UI::Rgba& a, const UI::Rgba& b, float t)
